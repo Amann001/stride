@@ -1,0 +1,4 @@
+# Keep Unix line endings in the repo so files match on every computer.
+* text=auto eol=lf
+*.png binary
+*.ico binary

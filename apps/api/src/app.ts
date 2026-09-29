@@ -1,0 +1,55 @@
+import cors from '@fastify/cors';
+import jwt from '@fastify/jwt';
+import Fastify, { type FastifyReply, type FastifyRequest } from 'fastify';
+import { ZodError } from 'zod';
+
+import { config } from './config';
+import { activityRoutes } from './routes/activities';
+import { authRoutes } from './routes/auth';
+
+// Tell TypeScript what we put inside login tokens.
+declare module '@fastify/jwt' {
+  interface FastifyJWT {
+    payload: { sub: string };
+    user: { sub: string };
+  }
+}
+
+declare module 'fastify' {
+  interface FastifyInstance {
+    authenticate: (req: FastifyRequest, reply: FastifyReply) => Promise<void>;
+  }
+}
+
+export async function buildApp() {
+  const app = Fastify({ logger: true });
+
+  // Allow the website (running on another port) to call this API.
+  await app.register(cors, { origin: true });
+  await app.register(jwt, { secret: config.jwtSecret, sign: { expiresIn: '30d' } });
+
+  // Add `onRequest: [app.authenticate]` to a route to require login.
+  app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
+    try {
+      await req.jwtVerify();
+    } catch {
+      reply.code(401).send({ error: 'Please log in' });
+    }
+  });
+
+  // Turns validation errors into a clear 400 response instead of a crash.
+  app.setErrorHandler((err, _req, reply) => {
+    if (err instanceof ZodError) {
+      return reply.code(400).send({ error: err.issues[0]?.message ?? 'Invalid input', issues: err.issues });
+    }
+    app.log.error(err);
+    const status = (err as { statusCode?: number }).statusCode ?? 500;
+    return reply.code(status).send({ error: status === 500 ? 'Something went wrong' : (err as Error).message });
+  });
+
+  app.get('/health', async () => ({ ok: true }));
+  await app.register(authRoutes);
+  await app.register(activityRoutes);
+
+  return app;
+}
