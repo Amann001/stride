@@ -2,7 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ACTIVITY_LABELS, decodePolyline, type ActivitySummary } from '@repo/shared';
 import { Link } from 'expo-router';
 import { useMemo } from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, Share, StyleSheet, Text, View } from 'react-native';
 
 import { AchievementBanner, MEDAL_COLORS } from '@/components/achievements';
 import { CategoryIcon } from '@/components/category-icon';
@@ -10,6 +10,13 @@ import { RouteMap } from '@/components/route-map';
 import { useColors } from '@/constants/theme';
 import { cardStats } from '@/lib/activity-stats';
 import { useAuth } from '@/lib/auth';
+
+// Opens the iPhone share sheet with a short summary, e.g. to send to a friend.
+export function shareActivity(a: ActivitySummary) {
+  const stats = cardStats(a).map((s) => `${s.label}: ${s.value}`).join(' · ');
+  const medals = a.achievements.length ? `\n🏅 ${a.achievements.map((x) => x.title).join(', ')}` : '';
+  Share.share({ message: `${a.title} (${ACTIVITY_LABELS[a.type]}) on Stride\n${stats}${medals}` });
+}
 
 // One activity in the feed: who and when, the numbers that matter for this kind of
 // activity, its best achievement, and a map of the route. Tapping opens the detail screen.
@@ -59,6 +66,12 @@ export function ActivityCard({ activity }: { activity: ActivitySummary }) {
         </View>
 
         {route.length > 1 && <RouteMap coords={route} preview style={styles.map} />}
+
+        <View style={[styles.actions, { borderColor: colors.border }]}>
+          <Pressable hitSlop={10} accessibilityLabel="Share activity" onPress={() => shareActivity(activity)}>
+            <MaterialCommunityIcons name="export-variant" size={24} color={colors.text} />
+          </Pressable>
+        </View>
       </Pressable>
     </Link>
   );
@@ -78,4 +91,8 @@ const styles = StyleSheet.create({
   statValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
   medalCount: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   map: { height: 190 },
+  actions: {
+    flexDirection: 'row', justifyContent: 'flex-end', paddingHorizontal: 20, paddingVertical: 12,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
 });

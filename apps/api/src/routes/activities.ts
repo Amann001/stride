@@ -1,8 +1,10 @@
 import {
   CATEGORIES,
   cleanTrack,
+  computeAchievements,
   createActivitySchema,
   encodePolyline,
+  manualActivitySchema,
   type Achievement,
   type ActivityDetail,
   type ActivitySummary,
@@ -13,7 +15,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { analyseActivity } from '../analysis';
+import { analyseActivity, earlierActivities } from '../analysis';
 import { pool } from '../db';
 
 interface ActivityRow {
@@ -104,6 +106,38 @@ export async function activityRoutes(app: FastifyInstance) {
         steps,
         maxSpeedMps,
         JSON.stringify(bestEfforts),
+        JSON.stringify(achievements),
+      ],
+    );
+    return reply.code(201).send(toSummary(rows[0]));
+  });
+
+  // Save an activity typed in by hand (e.g. a treadmill run or a ride without the phone).
+  // There's no GPS track, so no map, splits or best efforts, but it counts for totals,
+  // streaks, challenges, and the longest/biggest-climb achievements.
+  app.post('/activities/manual', async (req, reply) => {
+    const input = manualActivitySchema.parse(req.body);
+    const startedAt = new Date(input.startedAt);
+    const previous = await earlierActivities(pool, req.user.sub, input.type, startedAt);
+    const achievements = computeAchievements(
+      input.type,
+      { distanceMeters: input.distanceMeters, elevationGainMeters: input.elevationGainMeters, steps: null, bestEfforts: [] },
+      previous,
+    );
+    const { rows } = await pool.query<ActivityRow>(
+      `INSERT INTO activities (user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
+         distance_meters, elevation_gain_meters, polyline, points, max_speed_mps, best_efforts, achievements)
+       VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, '', '[]', 0, '[]', $9)
+       RETURNING ${SUMMARY_COLUMNS}`,
+      [
+        req.user.sub,
+        input.type,
+        input.title,
+        input.description ?? null,
+        startedAt,
+        input.elapsedSeconds,
+        input.distanceMeters,
+        input.elevationGainMeters,
         JSON.stringify(achievements),
       ],
     );
