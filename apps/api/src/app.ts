@@ -7,13 +7,15 @@ import { config } from './config';
 import { activityRoutes } from './routes/activities';
 import { authRoutes } from './routes/auth';
 import { challengeRoutes } from './routes/challenges';
+import { heatmapRoutes, routeRoutes } from './routes/maps';
 import { statsRoutes } from './routes/stats';
 
 // Tell TypeScript what we put inside login tokens.
 declare module '@fastify/jwt' {
   interface FastifyJWT {
-    payload: { sub: string };
-    user: { sub: string };
+    // `scope: 'tiles'` marks a short-lived key that can only load heatmap tiles.
+    payload: { sub: string; scope?: 'tiles' };
+    user: { sub: string; scope?: 'tiles' };
   }
 }
 
@@ -34,6 +36,8 @@ export async function buildApp() {
   app.decorate('authenticate', async (req: FastifyRequest, reply: FastifyReply) => {
     try {
       await req.jwtVerify();
+      // A heatmap-tiles key must not work as a full login.
+      if (req.user.scope) throw new Error('limited token');
     } catch {
       reply.code(401).send({ error: 'Please log in' });
     }
@@ -54,6 +58,8 @@ export async function buildApp() {
   await app.register(activityRoutes);
   await app.register(statsRoutes);
   await app.register(challengeRoutes);
+  await app.register(routeRoutes);
+  await app.register(heatmapRoutes);
 
   return app;
 }

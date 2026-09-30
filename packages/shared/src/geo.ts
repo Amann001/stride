@@ -101,7 +101,10 @@ export function computeStats(points: TrackPoint[]): TrackStats {
 
 // Google's polyline encoding squeezes a route into a short string.
 // https://developers.google.com/maps/documentation/utilities/polylinealgorithm
-export function encodePolyline(coords: { lat: number; lng: number }[]): string {
+// `precision` is decimal places kept: 5 (about 1 m) is the standard; routing servers
+// often send 6.
+export function encodePolyline(coords: { lat: number; lng: number }[], precision = 5): string {
+  const factor = 10 ** precision;
   let out = '';
   let prevLat = 0;
   let prevLng = 0;
@@ -114,8 +117,8 @@ export function encodePolyline(coords: { lat: number; lng: number }[]): string {
     out += String.fromCharCode(n + 63);
   };
   for (const c of coords) {
-    const lat = Math.round(c.lat * 1e5);
-    const lng = Math.round(c.lng * 1e5);
+    const lat = Math.round(c.lat * factor);
+    const lng = Math.round(c.lng * factor);
     encodeValue(lat - prevLat);
     encodeValue(lng - prevLng);
     prevLat = lat;
@@ -124,7 +127,8 @@ export function encodePolyline(coords: { lat: number; lng: number }[]): string {
   return out;
 }
 
-export function decodePolyline(str: string): { lat: number; lng: number }[] {
+export function decodePolyline(str: string, precision = 5): { lat: number; lng: number }[] {
+  const factor = 10 ** precision;
   const coords: { lat: number; lng: number }[] = [];
   let index = 0;
   let lat = 0;
@@ -143,7 +147,7 @@ export function decodePolyline(str: string): { lat: number; lng: number }[] {
   while (index < str.length) {
     lat += decodeValue();
     lng += decodeValue();
-    coords.push({ lat: lat / 1e5, lng: lng / 1e5 });
+    coords.push({ lat: lat / factor, lng: lng / factor });
   }
   return coords;
 }

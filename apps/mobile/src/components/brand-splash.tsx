@@ -4,8 +4,8 @@ import { INK } from '@/constants/theme';
 
 const WORDMARK = require('@/assets/images/splash-wordmark.png');
 // Same width as `imageWidth` in app.json, so the native splash and this screen line up exactly.
-// About 45% of an iPhone's width, like Strava's.
-const WIDTH = 180;
+// About 55% of an iPhone's width, big and bold like Strava's wordmark.
+const WIDTH = 220;
 const { width: fileW, height: fileH } = Image.resolveAssetSource(WORDMARK);
 
 // The opening screen: STRIDE on black. It matches the native splash screen in app.json

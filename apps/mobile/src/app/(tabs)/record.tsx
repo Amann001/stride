@@ -3,8 +3,10 @@ import {
   ACTIVITY_LABELS,
   CATEGORIES,
   computeSplits,
+  decodePolyline,
   defaultActivityTitle,
   elevationGain,
+  formatDistance,
   formatDuration,
   formatElevation,
   formatPace,
@@ -30,6 +32,7 @@ import { CATEGORY_LOOKS } from '@/constants/categories';
 import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 import { useGpsSignal } from '@/lib/use-gps-signal';
+import { setActiveRoute, useActiveRoute } from '@/lib/route-store';
 import { useRecorder } from '@/lib/use-recorder';
 
 type Item = { label: string; value: string };
@@ -65,6 +68,16 @@ export default function RecordScreen() {
   const gps = useGpsSignal(focused && rec.status === 'idle');
   const config = CATEGORIES[type];
   const look = CATEGORY_LOOKS[type];
+
+  // A route picked on the Maps tab or from Saved Routes, shown on the map to follow.
+  const activeRoute = useActiveRoute();
+  const guide = useMemo(() => (activeRoute ? decodePolyline(activeRoute.polyline) : undefined), [activeRoute]);
+  // Picking a route also picks its sport (adjusting state during render, as React recommends).
+  const [routeForType, setRouteForType] = useState<string | null>(null);
+  if (activeRoute && activeRoute.id !== routeForType && rec.status === 'idle') {
+    setRouteForType(activeRoute.id);
+    setType(activeRoute.sport);
+  }
 
   const say = (text: string) => {
     if (voiceOn) Speech.speak(text);
@@ -192,15 +205,15 @@ export default function RecordScreen() {
         <>
           <SideButton icon={look.icon} label={ACTIVITY_LABELS[type]} onPress={() => setSportSheetOpen(true)} tint={look.color} />
           <BigButton icon="play" color={colors.brand} iconColor={INK} label="Start" onPress={start} />
-          <SideButton icon={voiceOn ? 'volume-high' : 'volume-off'} label={voiceOn ? 'Voice on' : 'Voice off'}
-            onPress={() => setVoiceOn((v) => !v)} />
+          <SideButton icon="map-marker-path" label={activeRoute ? 'Change Route' : 'Add Route'}
+            onPress={() => router.push({ pathname: '/routes/saved', params: { pick: '1' } })}
+            tint={activeRoute ? colors.accent : undefined} />
         </>
       ) : rec.status === 'recording' ? (
         <>
           <View style={styles.sideSpacer} />
           <BigButton icon="pause" color={colors.text} iconColor={colors.background} label="Pause" onPress={pause} />
-          <SideButton icon={voiceOn ? 'volume-high' : 'volume-off'} label={voiceOn ? 'Voice on' : 'Voice off'}
-            onPress={() => setVoiceOn((v) => !v)} />
+          <View style={styles.sideSpacer} />
         </>
       ) : (
         <>
@@ -242,11 +255,28 @@ export default function RecordScreen() {
         </View>
       ) : (
         <>
-          <RouteMap coords={rec.points} follow style={styles.map} />
+          <RouteMap coords={rec.points} guide={guide} follow style={styles.map} />
           <Pressable onPress={() => router.navigate('/')} accessibilityLabel="Close"
             style={[styles.close, { top: insets.top + 8, backgroundColor: colors.card }]}>
             <MaterialCommunityIcons name="chevron-down" size={28} color={colors.text} />
           </Pressable>
+          <Pressable onPress={() => setVoiceOn((v) => !v)} accessibilityLabel={voiceOn ? 'Turn voice updates off' : 'Turn voice updates on'}
+            style={[styles.close, styles.voice, { top: insets.top + 8, backgroundColor: colors.card }]}>
+            <MaterialCommunityIcons name={voiceOn ? 'volume-high' : 'volume-off'} size={24} color={voiceOn ? colors.accent : colors.text} />
+          </Pressable>
+          {activeRoute && (
+            <View style={[styles.routeChip, { top: insets.top + 12, backgroundColor: colors.card }]}>
+              <MaterialCommunityIcons name="map-marker-path" size={18} color="#38BDF8" />
+              <Text style={{ color: colors.text, fontWeight: '700', flexShrink: 1 }} numberOfLines={1}>
+                {activeRoute.name} · {formatDistance(activeRoute.distanceMeters)}
+              </Text>
+              {rec.status === 'idle' && (
+                <Pressable onPress={() => setActiveRoute(null)} hitSlop={10} accessibilityLabel="Remove route">
+                  <MaterialCommunityIcons name="close-circle" size={20} color={colors.textSecondary} />
+                </Pressable>
+              )}
+            </View>
+          )}
           <View style={[styles.panel, { backgroundColor: colors.card }]}>
             <View style={[styles.status, { backgroundColor: status.bg }]}>
               <Text style={[styles.statusText, { color: status.fg }]}>{status.text}</Text>
@@ -332,4 +362,10 @@ const styles = StyleSheet.create({
   splitBars: { flexDirection: 'row', gap: 6, marginTop: 'auto' },
   splitBar: { flex: 1, height: 26, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   splitText: { color: INK, fontWeight: '700', fontSize: 12 },
+  voice: { left: undefined, right: 12 },
+  routeChip: {
+    position: 'absolute', left: 68, right: 68, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center',
+    borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8,
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
+  },
 });

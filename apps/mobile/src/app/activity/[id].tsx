@@ -1,3 +1,4 @@
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   ACTIVITY_LABELS,
   CATEGORIES,
@@ -8,17 +9,19 @@ import {
   formatPaceOrSpeed,
   type ActivityDetail,
 } from '@repo/shared';
-import { router, useLocalSearchParams } from 'expo-router';
+import { router, Stack, useLocalSearchParams } from 'expo-router';
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AchievementList } from '@/components/achievements';
 import { CategoryIcon } from '@/components/category-icon';
+import { EditActivitySheet, VISIBILITY_LOOK } from '@/components/edit-activity-sheet';
 import { ElevationChart } from '@/components/elevation-chart';
 import { RouteMap } from '@/components/route-map';
 import { SplitsTable } from '@/components/splits-table';
 import { Stat } from '@/components/stat';
 import { useColors } from '@/constants/theme';
+import { useAuth } from '@/lib/auth';
 import { detailStats } from '@/lib/activity-stats';
 import { api } from '@/lib/api';
 
@@ -29,6 +32,8 @@ export default function ActivityScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const [activity, setActivity] = useState<ActivityDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const { user } = useAuth();
 
   useEffect(() => {
     api.getActivity(id).then(setActivity, (err) => setError(err.message));
@@ -72,8 +77,25 @@ export default function ActivityScreen() {
     </Section>
   );
 
+  const mine = activity.userId === user?.id;
+
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+      <Stack.Screen
+        options={{
+          headerRight: mine
+            ? () => (
+                <Pressable onPress={() => setEditing(true)} hitSlop={10}>
+                  <Text style={{ color: colors.accent, fontSize: 16, fontWeight: '700' }}>Edit</Text>
+                </Pressable>
+              )
+            : undefined,
+        }}
+      />
+      {mine && (
+        <EditActivitySheet activity={activity} visible={editing} onClose={() => setEditing(false)}
+          onSaved={(u) => setActivity({ ...activity, ...u })} />
+      )}
       {/* Activities added by hand have no GPS track, so no map. */}
       {activity.points.length > 1 && <RouteMap coords={activity.points} style={styles.map} />}
 
@@ -85,6 +107,13 @@ export default function ActivityScreen() {
           </Text>
         </View>
         <Text style={[styles.title, { color: colors.text }]}>{activity.title}</Text>
+        {!!activity.description && <Text style={{ color: colors.text, fontSize: 15, marginTop: -6 }}>{activity.description}</Text>}
+        {mine && (
+          <View style={styles.visibility}>
+            <MaterialCommunityIcons name={VISIBILITY_LOOK[activity.visibility].icon} size={14} color={colors.textSecondary} />
+            <Text style={{ color: colors.textSecondary, fontSize: 12 }}>Visible to {VISIBILITY_LOOK[activity.visibility].label.toLowerCase()}</Text>
+          </View>
+        )}
         {statRows.map((row, i) => (
           <View key={i} style={styles.row}>
             {row.map((s) => <Stat key={s.label} label={s.label} value={s.value} />)}
@@ -152,6 +181,7 @@ const styles = StyleSheet.create({
   meta: { flex: 1 },
   title: { fontSize: 24, fontWeight: '800', marginTop: -6 },
   row: { flexDirection: 'row' },
+  visibility: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -8 },
   spacer: { flex: 1 },
   sectionTitle: { fontSize: 17, fontWeight: '700' },
   effort: { flexDirection: 'row', alignItems: 'center' },
