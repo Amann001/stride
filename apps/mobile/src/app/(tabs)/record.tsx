@@ -257,11 +257,11 @@ export default function RecordScreen() {
         <>
           <RouteMap coords={rec.points} guide={guide} follow style={styles.map} />
           <Pressable onPress={() => router.navigate('/')} accessibilityLabel="Close"
-            style={[styles.close, { top: insets.top + 8, backgroundColor: colors.card }]}>
+            style={[styles.floating, styles.close, { top: insets.top + 8, backgroundColor: colors.card }]}>
             <MaterialCommunityIcons name="chevron-down" size={28} color={colors.text} />
           </Pressable>
           <Pressable onPress={() => setVoiceOn((v) => !v)} accessibilityLabel={voiceOn ? 'Turn voice updates off' : 'Turn voice updates on'}
-            style={[styles.close, styles.voice, { top: insets.top + 8, backgroundColor: colors.card }]}>
+            style={[styles.floating, styles.voice, { top: insets.top + 8, backgroundColor: colors.card }]}>
             <MaterialCommunityIcons name={voiceOn ? 'volume-high' : 'volume-off'} size={24} color={voiceOn ? colors.accent : colors.text} />
           </Pressable>
           {activeRoute && (
@@ -322,7 +322,7 @@ function SideButton({ icon, label, onPress, tint }: { icon: IconName; label: str
   const colors = useColors();
   return (
     <Pressable onPress={onPress} accessibilityLabel={label} style={styles.side}>
-      <View style={[styles.sideButton, { backgroundColor: colors.background }]}>
+      <View style={[styles.sideButton, { backgroundColor: colors.raised }]}>
         <MaterialCommunityIcons name={icon} size={26} color={tint ?? colors.text} />
       </View>
       <Text style={[styles.controlLabel, { color: colors.textSecondary }]} numberOfLines={1}>{label}</Text>
@@ -333,10 +333,12 @@ function SideButton({ icon, label, onPress, tint }: { icon: IconName; label: str
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   map: { flex: 1, height: undefined },
-  close: {
-    position: 'absolute', left: 12, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+  // Round buttons floating over the map: close on the left, voice on the right.
+  floating: {
+    position: 'absolute', width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
   },
+  close: { left: 12 },
   panel: { paddingTop: 0 },
   status: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
   statusText: { fontWeight: '700', fontSize: 15 },
@@ -355,14 +357,14 @@ const styles = StyleSheet.create({
   controlLabel: { marginTop: 6, fontWeight: '600', fontSize: 13 },
   big: { flex: 1, paddingHorizontal: 20, gap: 18 },
   bigTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  bigTime: { fontSize: 64, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  bigTime: { fontSize: 64, fontWeight: '700', fontVariant: ['tabular-nums'] },
   bigStat: { alignItems: 'center' },
-  bigValue: { fontSize: 54, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  bigValue: { fontSize: 54, fontWeight: '700', fontVariant: ['tabular-nums'] },
   bigLabel: { fontSize: 15, fontWeight: '600' },
   splitBars: { flexDirection: 'row', gap: 6, marginTop: 'auto' },
   splitBar: { flex: 1, height: 26, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   splitText: { color: INK, fontWeight: '700', fontSize: 12 },
-  voice: { left: undefined, right: 12 },
+  voice: { right: 12 },
   routeChip: {
     position: 'absolute', left: 68, right: 68, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center',
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8,

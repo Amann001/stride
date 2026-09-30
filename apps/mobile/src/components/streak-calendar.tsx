@@ -65,13 +65,13 @@ export function StreakCalendar({ streakWeeks, activeDates }: { streakWeeks: numb
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, padding: 16, gap: 12 },
+  card: { paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   title: { fontSize: 17, fontWeight: '700' },
   body: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   flame: { alignItems: 'center', width: 80 },
   // Sits inside the flame icon.
-  count: { position: 'absolute', top: 26, left: 0, right: 0, textAlign: 'center', fontSize: 20, fontWeight: '800' },
+  count: { position: 'absolute', top: 26, left: 0, right: 0, textAlign: 'center', fontSize: 20, fontWeight: '700' },
   grid: { flex: 1, gap: 6 },
   gridRow: { flexDirection: 'row' },
   cell: { flex: 1, alignItems: 'center' },

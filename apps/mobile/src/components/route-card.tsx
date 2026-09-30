@@ -75,5 +75,5 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700' },
   meta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   tag: { borderRadius: 4, paddingHorizontal: 6, paddingVertical: 1 },
-  tagText: { color: INK, fontSize: 11, fontWeight: '800' },
+  tagText: { color: INK, fontSize: 11, fontWeight: '700' },
 });

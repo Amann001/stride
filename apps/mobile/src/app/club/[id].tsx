@@ -71,7 +71,7 @@ export default function ClubScreen() {
           <Pressable onPress={toggleMembership} disabled={busy}
             style={[styles.join, club.isMember ? { borderWidth: 1, borderColor: colors.border } : { backgroundColor: colors.brand }]}>
             {busy ? <ActivityIndicator color={club.isMember ? colors.text : INK} /> : (
-              <Text style={{ color: club.isMember ? colors.text : INK, fontWeight: '800' }}>
+              <Text style={{ color: club.isMember ? colors.text : INK, fontWeight: '700' }}>
                 {club.isMember ? 'Joined' : 'Join Club'}
               </Text>
             )}
@@ -97,7 +97,7 @@ export default function ClubScreen() {
               <Avatar id={l.athlete.id} name={l.athlete.name} size={36} />
               <Text style={[styles.leaderName, { color: colors.text }]} numberOfLines={1}>{l.athlete.name}</Text>
               <View style={styles.leaderStats}>
-                <Text style={{ color: colors.text, fontWeight: '800' }}>{formatDistance(l.distanceMeters)}</Text>
+                <Text style={{ color: colors.text, fontWeight: '700' }}>{formatDistance(l.distanceMeters)}</Text>
                 <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{l.activityCount} {l.activityCount === 1 ? 'activity' : 'activities'}</Text>
               </View>
             </Pressable>
@@ -132,7 +132,7 @@ const styles = StyleSheet.create({
   center: { marginTop: 48, textAlign: 'center' },
   content: { padding: 12, gap: 12, paddingBottom: 40 },
   hero: { borderRadius: 16, padding: 20, alignItems: 'center', gap: 8 },
-  name: { fontSize: 24, fontWeight: '800', textAlign: 'center' },
+  name: { fontSize: 24, fontWeight: '700', textAlign: 'center' },
   description: { textAlign: 'center', fontSize: 15 },
   join: { borderRadius: 999, paddingVertical: 11, paddingHorizontal: 36, marginTop: 6, minWidth: 160, alignItems: 'center' },
   tabs: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
@@ -140,7 +140,7 @@ const styles = StyleSheet.create({
   card: { borderRadius: 16, padding: 16, gap: 12 },
   cardTitle: { fontSize: 17, fontWeight: '700' },
   leader: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  rank: { width: 22, fontSize: 16, fontWeight: '800', textAlign: 'center' },
+  rank: { width: 22, fontSize: 16, fontWeight: '700', textAlign: 'center' },
   leaderName: { flex: 1, fontSize: 15, fontWeight: '600' },
   leaderStats: { alignItems: 'flex-end' },
   note: { textAlign: 'center', marginTop: 24 },

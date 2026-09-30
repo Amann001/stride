@@ -51,7 +51,7 @@ export function ChallengeCard({ challenge, onChange, style }: {
     ]);
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }, style]}>
+    <View style={[styles.card, { backgroundColor: colors.raised }, style]}>
       <View style={styles.top}>
         <ChallengeBadge challenge={challenge} />
         <View style={styles.text}>
@@ -94,7 +94,7 @@ export function ChallengeCard({ challenge, onChange, style }: {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, borderWidth: StyleSheet.hairlineWidth, padding: 16, gap: 12 },
+  card: { borderRadius: 14, padding: 16, gap: 12 },
   top: { flexDirection: 'row', gap: 14 },
   badge: { alignItems: 'center', justifyContent: 'center' },
   text: { flex: 1, gap: 4 },

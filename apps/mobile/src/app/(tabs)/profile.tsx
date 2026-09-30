@@ -81,12 +81,14 @@ export default function ProfileScreen() {
         right={<HeaderButton icon="cog-outline" label="Settings" onPress={() => setSection('more')} />}
       />
       <ScrollView
+        style={{ backgroundColor: colors.separator }}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => {
           setRefreshing(true);
           await load();
           setRefreshing(false);
         }} />}>
+        <View style={[styles.headerBlock, { backgroundColor: colors.card }]}>
         <View style={styles.profileRow}>
           {user && <Avatar id={user.id} name={user.name} size={72} />}
           <View style={styles.profileText}>
@@ -103,7 +105,7 @@ export default function ProfileScreen() {
             <Pressable key={list} hitSlop={6}
               onPress={() => user && router.push({ pathname: '/connections', params: { athleteId: user.id, list, name: user.name } })}>
               <Text style={{ color: colors.text }}>
-                <Text style={{ fontWeight: '800' }}>{n}</Text>{' '}
+                <Text style={{ fontWeight: '700' }}>{n}</Text>{' '}
                 <Text style={{ color: colors.textSecondary }}>{list === 'followers' ? (n === 1 ? 'follower' : 'followers') : 'following'}</Text>
               </Text>
             </Pressable>
@@ -132,12 +134,18 @@ export default function ProfileScreen() {
             },
           )}
         </View>
+        </View>
 
         {section === 'progress' && <Progress stats={stats} sport={sport} setSport={setSport} onGoalSaved={load} />}
-        {section === 'activities' &&
-          (activities.length ? activities.map((a) => <ActivityCard key={a.id} activity={a} />) : (
-            <Text style={[styles.empty, { color: colors.textSecondary }]}>No activities yet.</Text>
-          ))}
+        {section === 'activities' && (
+          <View style={styles.sectionBody}>
+            {activities.length ? activities.map((a) => <ActivityCard key={a.id} activity={a} />) : (
+              <Card>
+                <Text style={[styles.empty, { color: colors.textSecondary }]}>No activities yet.</Text>
+              </Card>
+            )}
+          </View>
+        )}
         {section === 'more' && <More stats={stats} trophies={trophies} activities={activities} onLogOut={signOut} />}
       </ScrollView>
     </View>
@@ -181,7 +189,8 @@ function Progress({ stats, sport, setSport, onGoalSaved }: {
 
   return (
     <View style={styles.sectionBody}>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={[styles.chipBar, { backgroundColor: colors.card }]}
+        contentContainerStyle={styles.chips}>
         {(['all', ...ACTIVITY_TYPES] as const).map((t) => {
           const active = sport === t;
           const fill = t === 'all' ? colors.brand : CATEGORY_LOOKS[t].color;
@@ -402,23 +411,28 @@ function RecordRow({ icon, iconColor, label, record, value, detail, dim = false 
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: 12, gap: 12, paddingBottom: 40 },
-  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14, marginTop: 4 },
+  content: { paddingBottom: 40 },
+  // Everything above the Progress / Activities / More tabs.
+  headerBlock: { paddingHorizontal: 16, paddingTop: 16, gap: 14 },
+  profileRow: { flexDirection: 'row', alignItems: 'center', gap: 14 },
   avatar: { width: 72, height: 72, borderRadius: 36, alignItems: 'center', justifyContent: 'center' },
-  avatarText: { fontSize: 30, fontWeight: '800' },
+  avatarText: { fontSize: 30, fontWeight: '700' },
   profileText: { flex: 1 },
-  name: { fontSize: 22, fontWeight: '800' },
+  name: { fontSize: 22, fontWeight: '700' },
   profileButtons: { flexDirection: 'row', gap: 10 },
   follows: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   findFriends: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
   outline: { flex: 1, borderWidth: 1, borderRadius: 999, paddingVertical: 9, alignItems: 'center' },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segment: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  sectionBody: { gap: 12 },
-  empty: { textAlign: 'center', marginTop: 24 },
-  chips: { gap: 8 },
+  // Sections under the tabs, with a band between each (the page colour shows through the gap).
+  sectionBody: { gap: 8 },
+  empty: { textAlign: 'center', paddingVertical: 16 },
+  // The sport chips join straight onto the first section below them.
+  chipBar: { marginBottom: -8 },
+  chips: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
-  card: { borderRadius: 16, padding: 16, gap: 12 },
+  card: { paddingHorizontal: 16, paddingVertical: 16, gap: 12 },
   cardHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   cardTitle: { fontSize: 17, fontWeight: '700' },
   inlineStats: { flexDirection: 'row', gap: 28 },

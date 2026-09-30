@@ -30,7 +30,7 @@ export default function EditProfileScreen() {
     }
   };
 
-  const input = [styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }];
+  const input = [styles.input, { backgroundColor: colors.raised, borderColor: colors.border, color: colors.text }];
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { backgroundColor: colors.background }]}>

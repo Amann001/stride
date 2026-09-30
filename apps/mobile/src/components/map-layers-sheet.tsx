@@ -172,7 +172,7 @@ const styles = StyleSheet.create({
   handle: { alignSelf: 'center', width: 40, height: 5, borderRadius: 3 },
   close: { position: 'absolute', right: 16, top: 10 },
   content: { paddingHorizontal: 16, paddingBottom: 12 },
-  section: { fontSize: 18, fontWeight: '800', marginTop: 12, marginBottom: 10 },
+  section: { fontSize: 18, fontWeight: '700', marginTop: 12, marginBottom: 10 },
   hint: { fontSize: 12, marginTop: -4, marginBottom: 10 },
   row: { flexDirection: 'row', gap: 12, flexWrap: 'wrap' },
   choice: { width: 78, alignItems: 'center' },
