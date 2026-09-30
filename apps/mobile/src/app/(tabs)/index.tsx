@@ -1,35 +1,45 @@
-import type { ActivitySummary, Challenge, UserStats } from '@repo/shared';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import type { ActivitySummary, AthleteSummary, Challenge, UserStats } from '@repo/shared';
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
-import { FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ActivityCard } from '@/components/activity-card';
 import { ChallengeCard } from '@/components/challenge-card';
 import { HighlightsCarousel } from '@/components/highlights-carousel';
 import { HeaderButton, TabHeader, Wordmark } from '@/components/tab-header';
+import { WhoToFollow } from '@/components/who-to-follow';
 import { useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
+import { useBadges } from '@/lib/use-badges';
 
-// Home tab: your streak and week at the top, then your activities, newest first, with
-// challenges you could join after the first one. Pull down to refresh.
-// (In the next phase the feed also includes people you follow.)
+// Home tab: your streak and week at the top, then a feed of your activities and those of
+// people you follow. Who to Follow and challenges appear after the first card.
 export default function HomeScreen() {
   const colors = useColors();
-  const [activities, setActivities] = useState<ActivitySummary[]>([]);
+  const { user } = useAuth();
+  const badges = useBadges();
+  const [feed, setFeed] = useState<ActivitySummary[]>([]);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [challenges, setChallenges] = useState<Challenge[]>([]);
+  const [suggested, setSuggested] = useState<AthleteSummary[]>([]);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [reachedEnd, setReachedEnd] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     try {
       setError(null);
-      const [list, s, c] = await Promise.all([api.listActivities(), api.getStats(), api.getChallenges()]);
-      setActivities(list);
+      const [f, s, c, who] = await Promise.all([api.feed(), api.getStats(), api.getChallenges(), api.suggestedAthletes()]);
+      setFeed(f);
+      setReachedEnd(f.length < 30);
       setStats(s);
       setChallenges(c.current.filter((x) => !x.joined));
+      setSuggested(who);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not load activities');
+      setError(err instanceof Error ? err.message : 'Could not load your feed');
     }
   }, []);
 
@@ -46,7 +56,33 @@ export default function HomeScreen() {
     setRefreshing(false);
   };
 
-  const suggested = challenges.length > 0 && (
+  // Older activities when you scroll to the bottom.
+  const loadMore = async () => {
+    if (loadingMore || reachedEnd || feed.length === 0) return;
+    setLoadingMore(true);
+    try {
+      const older = await api.feed(feed[feed.length - 1].startedAt);
+      setFeed((f) => [...f, ...older.filter((a) => !f.some((x) => x.id === a.id))]);
+      setReachedEnd(older.length < 30);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
+
+  const hasFriendsActivity = feed.some((a) => a.userId !== user?.id);
+
+  const findFriends = !hasFriendsActivity && (
+    <Pressable style={[styles.prompt, { backgroundColor: colors.card }]} onPress={() => router.push('/search')}>
+      <MaterialCommunityIcons name="account-multiple-plus-outline" size={30} color={colors.accent} />
+      <View style={styles.promptText}>
+        <Text style={[styles.promptTitle, { color: colors.text }]}>Way to go!</Text>
+        <Text style={{ color: colors.textSecondary }}>Find friends to inspire your next activity.</Text>
+      </View>
+      <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} />
+    </Pressable>
+  );
+
+  const suggestedChallenges = challenges.length > 0 && (
     <View style={styles.section}>
       <Text style={[styles.sectionTitle, { color: colors.text }]}>Suggested Challenges</Text>
       <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>
@@ -66,20 +102,40 @@ export default function HomeScreen() {
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
       <TabHeader
-        left={<HeaderButton icon="plus" label="Add manual activity" onPress={() => router.push('/manual')} />}
+        left={
+          <>
+            <HeaderButton icon="plus" label="Add manual activity" onPress={() => router.push('/manual')} />
+            <HeaderButton icon="magnify" label="Find friends and clubs" onPress={() => router.push('/search')} />
+          </>
+        }
         title={<Wordmark />}
-        right={<HeaderButton icon="bell-outline" label="Notifications" onPress={() => router.push('/notifications')} />}
+        right={
+          <>
+            <HeaderButton icon="chat-outline" label="Messages" dot={badges.messages > 0} onPress={() => router.push('/messages')} />
+            <HeaderButton icon="bell-outline" label="Notifications" dot={badges.notifications > 0}
+              onPress={() => router.push('/notifications')} />
+          </>
+        }
       />
       <FlatList
         contentContainerStyle={styles.list}
-        data={activities}
+        data={feed}
         keyExtractor={(a) => a.id}
         renderItem={({ item, index }) => (
           <>
             <ActivityCard activity={item} />
-            {index === 0 && suggested}
+            {index === 0 && (
+              <>
+                {findFriends}
+                <WhoToFollow athletes={suggested} />
+                {suggestedChallenges}
+              </>
+            )}
           </>
         )}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.more} color={colors.accent} /> : null}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         ListHeaderComponent={
           <View style={styles.header}>
@@ -94,7 +150,13 @@ export default function HomeScreen() {
             <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
               {error ?? 'Tap Record and head out for a run, ride, walk or hike.'}
             </Text>
-            {!error && suggested}
+            {!error && (
+              <>
+                {findFriends}
+                <WhoToFollow athletes={suggested} />
+                {suggestedChallenges}
+              </>
+            )}
           </View>
         }
       />
@@ -111,6 +173,10 @@ const styles = StyleSheet.create({
   challengeRow: { gap: 12 },
   challengeCard: { width: 300 },
   seeAll: { alignSelf: 'flex-end', marginTop: 12 },
+  prompt: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 16, marginBottom: 16, alignSelf: 'stretch' },
+  promptText: { flex: 1 },
+  promptTitle: { fontSize: 16, fontWeight: '800' },
+  more: { marginVertical: 16 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, gap: 6 },
   emptyTitle: { fontSize: 18, fontWeight: '700' },
 });

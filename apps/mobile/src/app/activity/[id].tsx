@@ -10,10 +10,12 @@ import {
   type ActivityDetail,
 } from '@repo/shared';
 import { router, Stack, useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ActivityIndicator, Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { AchievementList } from '@/components/achievements';
+import { ActivitySocial } from '@/components/activity-social';
+import { Avatar } from '@/components/avatar';
 import { CategoryIcon } from '@/components/category-icon';
 import { EditActivitySheet, VISIBILITY_LOOK } from '@/components/edit-activity-sheet';
 import { ElevationChart } from '@/components/elevation-chart';
@@ -29,7 +31,8 @@ import { api } from '@/lib/api';
 // (splits and best efforts for runs and rides, the hill profile first for hikes).
 export default function ActivityScreen() {
   const colors = useColors();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, show } = useLocalSearchParams<{ id: string; show?: 'comments' | 'kudos' }>();
+  const scrollRef = useRef<ScrollView>(null);
   const [activity, setActivity] = useState<ActivityDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
@@ -80,7 +83,8 @@ export default function ActivityScreen() {
   const mine = activity.userId === user?.id;
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView ref={scrollRef} style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}
+      keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
       <Stack.Screen
         options={{
           headerRight: mine
@@ -100,6 +104,12 @@ export default function ActivityScreen() {
       {activity.points.length > 1 && <RouteMap coords={activity.points} style={styles.map} />}
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
+        {!mine && (
+          <Pressable style={styles.athlete} onPress={() => router.push({ pathname: '/athlete/[id]', params: { id: activity.athlete.id } })}>
+            <Avatar id={activity.athlete.id} name={activity.athlete.name} size={36} />
+            <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>{activity.athlete.name}</Text>
+          </Pressable>
+        )}
         <View style={styles.header}>
           <CategoryIcon type={activity.type} />
           <Text style={[styles.meta, { color: colors.textSecondary }]}>
@@ -121,6 +131,13 @@ export default function ActivityScreen() {
             {Array.from({ length: 3 - row.length }, (_, k) => <View key={k} style={styles.spacer} />)}
           </View>
         ))}
+      </View>
+
+      <View onLayout={(e) => {
+        // Opened from the Comment button on a feed card: scroll down to the comments.
+        if (show) scrollRef.current?.scrollTo({ y: e.nativeEvent.layout.y - 12, animated: true });
+      }}>
+        <ActivitySocial activity={activity} autoFocusComment={show === 'comments'} />
       </View>
 
       {activity.achievements.length > 0 && (
@@ -155,9 +172,11 @@ export default function ActivityScreen() {
         </Section>
       )}
 
-      <Pressable onPress={confirmDelete} style={styles.delete}>
-        <Text style={{ color: colors.danger, fontWeight: '600' }}>Delete activity</Text>
-      </Pressable>
+      {mine && (
+        <Pressable onPress={confirmDelete} style={styles.delete}>
+          <Text style={{ color: colors.danger, fontWeight: '600' }}>Delete activity</Text>
+        </Pressable>
+      )}
     </ScrollView>
   );
 }
@@ -181,6 +200,7 @@ const styles = StyleSheet.create({
   meta: { flex: 1 },
   title: { fontSize: 24, fontWeight: '800', marginTop: -6 },
   row: { flexDirection: 'row' },
+  athlete: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   visibility: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -8 },
   spacer: { flex: 1 },
   sectionTitle: { fontSize: 17, fontWeight: '700' },

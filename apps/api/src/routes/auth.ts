@@ -9,11 +9,20 @@ interface UserRow {
   email: string;
   name: string;
   password_hash: string;
+  bio: string | null;
+  location: string | null;
   created_at: Date;
 }
 
 export function toUser(row: UserRow): User {
-  return { id: row.id, email: row.email, name: row.name, createdAt: row.created_at.toISOString() };
+  return {
+    id: row.id,
+    email: row.email,
+    name: row.name,
+    bio: row.bio ?? null,
+    location: row.location ?? null,
+    createdAt: row.created_at.toISOString(),
+  };
 }
 
 export async function authRoutes(app: FastifyInstance) {
@@ -53,10 +62,16 @@ export async function authRoutes(app: FastifyInstance) {
     return toUser(rows[0]);
   });
 
-  // Edit profile: currently just your display name.
+  // Edit profile: name, and optionally bio and location (empty text clears them).
   app.patch('/me', { onRequest: [app.authenticate] }, async (req, reply) => {
-    const { name } = updateProfileSchema.parse(req.body);
-    const { rows } = await pool.query<UserRow>('UPDATE users SET name = $2 WHERE id = $1 RETURNING *', [req.user.sub, name]);
+    const { name, bio, location } = updateProfileSchema.parse(req.body);
+    const { rows } = await pool.query<UserRow>(
+      `UPDATE users SET name = $2,
+         bio = CASE WHEN $3::boolean THEN nullif($4, '') ELSE bio END,
+         location = CASE WHEN $5::boolean THEN nullif($6, '') ELSE location END
+       WHERE id = $1 RETURNING *`,
+      [req.user.sub, name, bio !== undefined, bio ?? null, location !== undefined, location ?? null],
+    );
     if (!rows[0]) return reply.code(404).send({ error: 'User not found' });
     return toUser(rows[0]);
   });
