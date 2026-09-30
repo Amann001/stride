@@ -1,8 +1,8 @@
 import type { AuthResponse, User } from '@repo/shared';
-import * as SecureStore from 'expo-secure-store';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { api, ApiError, setAuthToken } from './api';
+import { storage } from './storage';
 
 // Keeps track of who is logged in. The login token is saved in the iPhone's
 // secure keychain so you stay logged in after closing the app.
@@ -28,14 +28,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     (async () => {
       try {
-        const token = await SecureStore.getItemAsync(TOKEN_KEY);
+        const token = await storage.get(TOKEN_KEY);
         if (token) {
           setAuthToken(token);
           setUser(await api.me());
         }
       } catch (err) {
         if (err instanceof ApiError && err.status === 401) {
-          await SecureStore.deleteItemAsync(TOKEN_KEY);
+          await storage.remove(TOKEN_KEY);
           setAuthToken(null);
         }
       } finally {
@@ -45,7 +45,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const finishLogin = useCallback(async ({ token, user }: AuthResponse) => {
-    await SecureStore.setItemAsync(TOKEN_KEY, token);
+    await storage.set(TOKEN_KEY, token);
     setAuthToken(token);
     setUser(user);
   }, []);
@@ -57,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signIn: async (email, password) => finishLogin(await api.login(email, password)),
       signUp: async (name, email, password) => finishLogin(await api.register(name, email, password)),
       signOut: async () => {
-        await SecureStore.deleteItemAsync(TOKEN_KEY);
+        await storage.remove(TOKEN_KEY);
         setAuthToken(null);
         setUser(null);
       },

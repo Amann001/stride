@@ -177,6 +177,8 @@ const styles = StyleSheet.create({
   promptText: { flex: 1 },
   promptTitle: { fontSize: 16, fontWeight: '800' },
   more: { marginVertical: 16 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, gap: 6 },
+  // Laid out top to bottom (not centred): centring made tall content spill up over the
+  // streak card when the feed was empty.
+  empty: { alignItems: 'center', paddingTop: 24, gap: 6 },
   emptyTitle: { fontSize: 18, fontWeight: '700' },
 });
