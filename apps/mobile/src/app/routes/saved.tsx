@@ -80,7 +80,7 @@ export default function SavedRoutesScreen() {
           ),
         }}
       />
-      <View style={[styles.search, { backgroundColor: colors.card }]}>
+      <View style={[styles.search, { backgroundColor: colors.raised }]}>
         <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
         <TextInput style={[styles.searchInput, { color: colors.text }]} placeholder="Search by keyword"
           placeholderTextColor={colors.textSecondary} value={query} onChangeText={setQuery} />
@@ -115,7 +115,7 @@ export default function SavedRoutesScreen() {
               </Text>
               {!routes.length && (
                 <Pressable style={[styles.button, { backgroundColor: colors.brand }]} onPress={() => router.push('/routes/create')}>
-                  <Text style={{ color: colors.onBrand, fontWeight: '800' }}>Create a Route</Text>
+                  <Text style={{ color: colors.onBrand, fontWeight: '700' }}>Create a Route</Text>
                 </Pressable>
               )}
             </View>

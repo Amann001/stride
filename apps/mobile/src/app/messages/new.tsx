@@ -45,7 +45,7 @@ export default function NewMessageScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <View style={[styles.search, { backgroundColor: colors.card }]}>
+      <View style={[styles.search, { backgroundColor: colors.raised }]}>
         <Text style={{ color: colors.textSecondary }}>To:</Text>
         <TextInput style={[styles.input, { color: colors.text }]} value={query} onChangeText={setQuery} autoFocus
           placeholder="Search people you follow" placeholderTextColor={colors.textSecondary} />
@@ -78,7 +78,7 @@ export default function NewMessageScreen() {
               </Text>
               {!people.length && (
                 <Pressable style={[styles.button, { backgroundColor: colors.brand }]} onPress={() => router.replace('/search')}>
-                  <Text style={{ color: colors.onBrand, fontWeight: '800' }}>Find Friends</Text>
+                  <Text style={{ color: colors.onBrand, fontWeight: '700' }}>Find Friends</Text>
                 </Pressable>
               )}
             </View>

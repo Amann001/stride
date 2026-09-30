@@ -63,7 +63,7 @@ export default function GroupsScreen() {
         ))}
       </View>
       {section === 'clubs' ? (
-        <ScrollView contentContainerStyle={styles.content}>
+        <ScrollView style={{ backgroundColor: colors.separator }} contentContainerStyle={styles.content}>
           <Pressable style={[styles.createClub, { backgroundColor: colors.card }]} onPress={() => router.push('/clubs/new')}>
             <MaterialCommunityIcons name="account-group" size={32} color={colors.accent} />
             <View style={styles.createText}>
@@ -72,12 +72,12 @@ export default function GroupsScreen() {
             </View>
           </Pressable>
           {myClubs.length > 0 && (
-            <View>
+            <View style={[styles.section, { backgroundColor: colors.card }]}>
               <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Clubs</Text>
               {myClubs.map((c) => <ClubRow key={c.id} club={c} />)}
             </View>
           )}
-          <View>
+          <View style={[styles.section, { backgroundColor: colors.card }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Popular Clubs</Text>
             {popular.length ? popular.map((c) => <ClubRow key={c.id} club={c} />) : (
               <Text style={{ color: colors.textSecondary, marginTop: 6 }}>
@@ -88,13 +88,15 @@ export default function GroupsScreen() {
         </ScrollView>
       ) : (
       <ScrollView
+        style={{ backgroundColor: colors.separator }}
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => {
           setRefreshing(true);
           await load();
           setRefreshing(false);
         }} />}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ backgroundColor: colors.card, flexGrow: 0 }}
+          contentContainerStyle={styles.chips}>
           <FilterChip label="All" selected={filter === 'all'} onPress={() => setFilter('all')} />
           {ACTIVITY_TYPES.map((t) => (
             <FilterChip key={t} type={t} label={ACTIVITY_LABELS[t]} selected={filter === t} onPress={() => setFilter(t)} />
@@ -104,14 +106,14 @@ export default function GroupsScreen() {
         {error && <Text style={[styles.message, { color: colors.danger }]}>{error}</Text>}
 
         {joined.length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, { backgroundColor: colors.card }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Challenges</Text>
             {joined.map((c) => <ChallengeCard key={c.id} challenge={c} onChange={load} />)}
           </View>
         )}
 
         {others.length > 0 && (
-          <View style={styles.section}>
+          <View style={[styles.section, { backgroundColor: colors.card }]}>
             <Text style={[styles.sectionTitle, { color: colors.text }]}>Recommended For You</Text>
             <Text style={{ color: colors.textSecondary, marginTop: -6 }}>
               New challenges every month. Join one and your activities count automatically.
@@ -141,14 +143,15 @@ function FilterChip({ label, type, selected, onPress }: {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  content: { padding: 12, gap: 16, paddingBottom: 32 },
-  chips: { gap: 8 },
+  // Full-width sections with a band between each, like Strava.
+  content: { gap: 8, paddingBottom: 32 },
+  chips: { gap: 8, paddingHorizontal: 16, paddingVertical: 12 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 7 },
   message: { textAlign: 'center', marginTop: 24 },
-  section: { gap: 12 },
-  sectionTitle: { fontSize: 20, fontWeight: '800' },
+  section: { gap: 12, paddingHorizontal: 16, paddingVertical: 16 },
+  sectionTitle: { fontSize: 18, fontWeight: '700' },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segment: { flex: 1, alignItems: 'center', paddingVertical: 11, borderBottomWidth: 2, borderBottomColor: 'transparent' },
-  createClub: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 16 },
+  createClub: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 18 },
   createText: { flex: 1, gap: 4 },
 });

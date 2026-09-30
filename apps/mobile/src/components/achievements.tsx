@@ -24,7 +24,7 @@ export function Medal({ achievement, size = 22 }: { achievement: Achievement; si
 export function AchievementBanner({ achievement, more }: { achievement: Achievement; more: number }) {
   const colors = useColors();
   return (
-    <View style={[styles.banner, { backgroundColor: colors.background }]}>
+    <View style={[styles.banner, { backgroundColor: colors.raised }]}>
       <View style={[styles.medalCircle, { borderColor: MEDAL_COLORS[achievement.rank] }]}>
         <Medal achievement={achievement} size={20} />
       </View>

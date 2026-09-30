@@ -83,7 +83,7 @@ export default function ActivityScreen() {
   const mine = activity.userId === user?.id;
 
   return (
-    <ScrollView ref={scrollRef} style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}
+    <ScrollView ref={scrollRef} style={{ backgroundColor: colors.separator }} contentContainerStyle={styles.content}
       keyboardShouldPersistTaps="handled" keyboardDismissMode="interactive" automaticallyAdjustKeyboardInsets>
       <Stack.Screen
         options={{
@@ -126,7 +126,7 @@ export default function ActivityScreen() {
         )}
         {statRows.map((row, i) => (
           <View key={i} style={styles.row}>
-            {row.map((s) => <Stat key={s.label} label={s.label} value={s.value} />)}
+            {row.map((s) => <Stat key={s.label} label={s.label} value={s.value} align="left" />)}
             {/* Keep columns lined up when the last row is short. */}
             {Array.from({ length: 3 - row.length }, (_, k) => <View key={k} style={styles.spacer} />)}
           </View>
@@ -173,7 +173,7 @@ export default function ActivityScreen() {
       )}
 
       {mine && (
-        <Pressable onPress={confirmDelete} style={styles.delete}>
+        <Pressable onPress={confirmDelete} style={[styles.delete, { backgroundColor: colors.card }]}>
           <Text style={{ color: colors.danger, fontWeight: '600' }}>Delete activity</Text>
         </Pressable>
       )}
@@ -193,12 +193,13 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 const styles = StyleSheet.create({
   center: { marginTop: 48, textAlign: 'center' },
-  content: { gap: 12, paddingBottom: 32 },
+  // Sections with a thin band between them (the page colour shows through the gap).
+  content: { gap: 8, paddingBottom: 32 },
   map: { height: 320 },
-  card: { padding: 20, gap: 18 },
+  card: { paddingHorizontal: 16, paddingVertical: 18, gap: 16 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   meta: { flex: 1 },
-  title: { fontSize: 24, fontWeight: '800', marginTop: -6 },
+  title: { fontSize: 24, fontWeight: '700', marginTop: -6 },
   row: { flexDirection: 'row' },
   athlete: { flexDirection: 'row', alignItems: 'center', gap: 10 },
   visibility: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: -8 },
@@ -208,5 +209,5 @@ const styles = StyleSheet.create({
   effortName: { flex: 1, fontSize: 15, fontWeight: '600' },
   effortValue: { width: 80, fontWeight: '700', fontVariant: ['tabular-nums'] },
   effortPace: { width: 90, textAlign: 'right', fontVariant: ['tabular-nums'] },
-  delete: { alignItems: 'center', paddingVertical: 12 },
+  delete: { alignItems: 'center', paddingVertical: 16 },
 });

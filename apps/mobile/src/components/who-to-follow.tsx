@@ -15,16 +15,16 @@ export function WhoToFollow({ athletes }: { athletes: AthleteSummary[] }) {
   if (shown.length === 0) return null;
 
   return (
-    <View style={styles.section}>
+    <View style={[styles.section, { backgroundColor: colors.card }]}>
       <View style={styles.header}>
         <Text style={[styles.title, { color: colors.text }]}>Who to Follow</Text>
         <Pressable onPress={() => router.push('/search')} hitSlop={8}>
           <Text style={{ color: colors.accent, fontWeight: '700' }}>See All</Text>
         </Pressable>
       </View>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cards}>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.row} contentContainerStyle={styles.cards}>
         {shown.map((a) => (
-          <Pressable key={a.id} style={[styles.card, { backgroundColor: colors.card }]}
+          <Pressable key={a.id} style={[styles.card, { backgroundColor: colors.raised }]}
             onPress={() => router.push({ pathname: '/athlete/[id]', params: { id: a.id } })}>
             <Avatar id={a.id} name={a.name} size={64} />
             <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{a.name}</Text>
@@ -43,12 +43,14 @@ export function WhoToFollow({ athletes }: { athletes: AthleteSummary[] }) {
 }
 
 const styles = StyleSheet.create({
-  section: { marginTop: 8, marginBottom: 20, gap: 12 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { fontSize: 20, fontWeight: '800' },
-  cards: { gap: 12 },
-  card: { width: 200, borderRadius: 16, padding: 16, alignItems: 'center', gap: 6 },
-  name: { fontSize: 16, fontWeight: '800', marginTop: 4 },
+  section: { paddingVertical: 16, gap: 12 },
+  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 16 },
+  title: { fontSize: 18, fontWeight: '700' },
+  // Cards keep their own height instead of stretching to fill the screen.
+  row: { flexGrow: 0 },
+  cards: { gap: 12, paddingHorizontal: 16, alignItems: 'flex-start' },
+  card: { width: 190, borderRadius: 14, padding: 16, alignItems: 'center', gap: 6 },
+  name: { fontSize: 16, fontWeight: '700', marginTop: 4 },
   reason: { fontSize: 12, textAlign: 'center', minHeight: 32 },
   buttons: { flexDirection: 'row', gap: 6, marginTop: 4 },
   remove: { borderWidth: 1, borderRadius: 999, paddingVertical: 6, paddingHorizontal: 12 },

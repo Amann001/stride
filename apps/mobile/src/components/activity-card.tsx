@@ -109,7 +109,7 @@ export function ActivityCard({ activity }: { activity: ActivitySummary }) {
 
         {route.length > 1 && <RouteMap coords={route} preview style={styles.map} />}
 
-        <View style={[styles.actions, { borderColor: colors.border }]}>
+        <View style={styles.actions}>
           <KudosButton activity={activity} />
           <Pressable hitSlop={10} style={styles.action} accessibilityLabel="Comment"
             onPress={() => router.push({ pathname: '/activity/[id]', params: { id: activity.id, show: 'comments' } })}>
@@ -126,24 +126,22 @@ export function ActivityCard({ activity }: { activity: ActivitySummary }) {
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, marginBottom: 12, overflow: 'hidden' },
-  padded: { padding: 16, gap: 14 },
+  // Full width, no rounded corners: the band between posts separates them, like Strava.
+  card: { overflow: 'hidden' },
+  padded: { paddingHorizontal: 16, paddingTop: 16, paddingBottom: 14, gap: 12 },
   header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   headerText: { flex: 1 },
   name: { fontSize: 16, fontWeight: '700' },
   metaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
   meta: { fontSize: 13, flexShrink: 1 },
-  title: { fontSize: 22, fontWeight: '800' },
+  title: { fontSize: 22, fontWeight: '700' },
   stats: { flexDirection: 'row', gap: 16 },
   stat: { flexShrink: 1 },
   statLabel: { fontSize: 13, marginBottom: 2 },
   statValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
   medalCount: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   map: { height: 190 },
-  actions: {
-    flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-  },
+  actions: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12 },
   action: { flexDirection: 'row', alignItems: 'center', gap: 6, minWidth: 60, justifyContent: 'center' },
   count: { fontWeight: '700', fontSize: 15 },
 });

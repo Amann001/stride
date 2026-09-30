@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   ACTIVITY_LABELS,
   decodePolyline,
+  HEATMAP_INFO,
   distanceBetween,
   elevationBand,
   formatDistance,
@@ -15,7 +16,7 @@ import {
 } from '@repo/shared';
 import * as Location from 'expo-location';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -37,7 +38,8 @@ import { SportSheet } from '@/components/sport-sheet';
 import { CATEGORY_LOOKS, type IconName } from '@/constants/categories';
 import { INK, LIME, useColors } from '@/constants/theme';
 import { api, heatmapTileUrl } from '@/lib/api';
-import { useMapPrefs } from '@/lib/map-prefs';
+import { useMapPrefs, type MapStyle } from '@/lib/map-prefs';
+import { storage } from '@/lib/storage';
 import { rememberRoutes, toggleSaved, useSavedCopies } from '@/lib/route-store';
 
 type Mode = 'routes' | 'activities';
@@ -91,6 +93,15 @@ export default function MapsScreen() {
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [tile, setTile] = useState<{ token: string; at: number } | null>(null);
   const [pitched, setPitched] = useState(false);
+  // A one-time hint pointing at Layers, until you've opened it once.
+  const [showLayersHint, setShowLayersHint] = useState(false);
+  useEffect(() => {
+    storage.get(LAYERS_HINT_KEY).then((seen) => setShowLayersHint(!seen), () => {});
+  }, []);
+  const dismissHint = () => {
+    setShowLayersHint(false);
+    storage.set(LAYERS_HINT_KEY, '1').catch(() => {});
+  };
   const [sheet, setSheet] = useState<'sport' | 'layers' | 'mode' | 'length' | 'elevation' | 'difficulty' | null>(null);
 
   // Find routes of a sport (and length) around a point. Called by whatever the user did:
@@ -222,6 +233,16 @@ export default function MapsScreen() {
   };
 
   const layersOn = (prefs.heatmap ? 1 : 0) + (prefs.bikeLanes ? 1 : 0) + (prefs.mapStyle !== 'standard' ? 1 : 0);
+  // The Layers chip says what's on, so it's clear where map types and heatmaps live.
+  const layersLabel = prefs.heatmap
+    ? `${HEATMAP_INFO[prefs.heatmap].label} heatmap`
+    : prefs.mapStyle !== 'standard'
+      ? STYLE_NAMES[prefs.mapStyle]
+      : 'Layers';
+  const openLayers = () => {
+    setSheet('layers');
+    dismissHint();
+  };
   const lengthOptions: Option<number | null>[] = [
     { value: null, label: 'Any length' },
     ...LENGTH_FILTERS[sport].map((l, i) => ({ value: i, label: l.label })),
@@ -289,6 +310,7 @@ export default function MapsScreen() {
           </Pressable>
         </View>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          <Chip icon="layers-outline" label={layersLabel} active={layersOn > 0} dropdown onPress={openLayers} />
           <Chip label={mode === 'routes' ? 'Routes' : 'My Activities'} active dropdown onPress={() => setSheet('mode')} />
           {mode === 'routes' && (
             <>
@@ -300,16 +322,26 @@ export default function MapsScreen() {
             </>
           )}
         </ScrollView>
+        {showLayersHint && (
+          <Pressable style={[styles.hint, { backgroundColor: colors.brand }]} onPress={openLayers}>
+            <View style={[styles.hintArrow, { borderBottomColor: colors.brand }]} />
+            <MaterialCommunityIcons name="layers-triple-outline" size={20} color={INK} />
+            <Text style={styles.hintText}>New: satellite view and heatmaps. Tap Layers to try them.</Text>
+            <Pressable hitSlop={10} onPress={dismissHint} accessibilityLabel="Dismiss">
+              <MaterialCommunityIcons name="close" size={18} color={INK} />
+            </Pressable>
+          </Pressable>
+        )}
         {showSearchHere && (
           <Pressable style={[styles.searchHere, { backgroundColor: colors.brand }]} onPress={() => mapCenter && load(mapCenter, filters)}>
-            <Text style={{ color: INK, fontWeight: '800' }}>Search Here</Text>
+            <Text style={{ color: INK, fontWeight: '700' }}>Search Here</Text>
           </Pressable>
         )}
       </View>
 
       {/* Map buttons */}
       <View style={[styles.mapButtons, { top: insets.top + 130 }]}>
-        <MapButton icon="layers-outline" label="Map layers" badge={layersOn} onPress={() => setSheet('layers')} />
+        <MapButton icon="layers-outline" label="Map layers" badge={layersOn} onPress={openLayers} />
         <MapButton text="3D" label="Tilt the map" active={pitched} onPress={toggle3d} />
         <MapButton icon="crosshairs-gps" label="Go to my location" onPress={async () => {
           const here = await locateMe();
@@ -415,10 +447,10 @@ export default function MapsScreen() {
                 </Text>
               )}
 
-              <Pressable style={[styles.createCard, { backgroundColor: colors.background }]} onPress={() => router.push('/routes/create')}>
+              <Pressable style={[styles.createCard, { backgroundColor: colors.raised }]} onPress={() => router.push('/routes/create')}>
                 <MaterialCommunityIcons name="map-marker-path" size={28} color={colors.accent} />
                 <View style={styles.selectedText}>
-                  <Text style={{ color: colors.text, fontWeight: '800', fontSize: 16 }}>Create a Route</Text>
+                  <Text style={{ color: colors.text, fontWeight: '700', fontSize: 16 }}>Create a Route</Text>
                   <Text style={{ color: colors.textSecondary, fontSize: 13 }}>Tap the map to plan your own, following roads and paths.</Text>
                 </View>
               </Pressable>
@@ -459,12 +491,17 @@ export default function MapsScreen() {
 }
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
+const LAYERS_HINT_KEY = 'seen_layers_hint';
+const STYLE_NAMES: Record<MapStyle, string> = { standard: 'Standard', satellite: 'Satellite', hybrid: 'Hybrid', mutedStandard: 'Muted' };
 
-function Chip({ label, active, dropdown, onPress }: { label: string; active: boolean; dropdown?: boolean; onPress: () => void }) {
+function Chip({ label, active, dropdown, icon, onPress }: {
+  label: string; active: boolean; dropdown?: boolean; icon?: IconName; onPress: () => void;
+}) {
   const colors = useColors();
   return (
     <Pressable onPress={onPress}
       style={[styles.chip, { backgroundColor: colors.card, borderColor: active ? colors.accent : colors.border }]}>
+      {icon && <MaterialCommunityIcons name={icon} size={16} color={active ? colors.accent : colors.text} />}
       <Text style={{ color: active ? colors.accent : colors.text, fontWeight: '600', fontSize: 13 }}>{label}</Text>
       {dropdown && <MaterialCommunityIcons name="chevron-down" size={16} color={active ? colors.accent : colors.textSecondary} />}
     </Pressable>
@@ -481,7 +518,7 @@ function MapButton({ icon, text, label, badge, active, onPress }: {
       {icon ? (
         <MaterialCommunityIcons name={icon} size={22} color={active ? INK : colors.text} />
       ) : (
-        <Text style={{ color: active ? INK : colors.text, fontWeight: '800' }}>{text}</Text>
+        <Text style={{ color: active ? INK : colors.text, fontWeight: '700' }}>{text}</Text>
       )}
       {!!badge && (
         <View style={[styles.badge, { backgroundColor: colors.brand }]}>
@@ -523,18 +560,28 @@ const styles = StyleSheet.create({
   chip: { flexDirection: 'row', alignItems: 'center', gap: 2, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7, ...shadow },
   searchHere: { alignSelf: 'center', borderRadius: 999, paddingHorizontal: 20, paddingVertical: 10, marginTop: 4, ...shadow },
   mapButtons: { position: 'absolute', right: 12, gap: 10 },
+  hint: {
+    flexDirection: 'row', alignItems: 'center', gap: 8, marginHorizontal: 12, marginTop: 4, borderRadius: 12,
+    paddingHorizontal: 12, paddingVertical: 10, alignSelf: 'flex-start', maxWidth: 330, ...shadow,
+  },
+  // Little triangle pointing up at the Layers chip.
+  hintArrow: {
+    position: 'absolute', top: -7, left: 22, width: 0, height: 0,
+    borderLeftWidth: 7, borderRightWidth: 7, borderBottomWidth: 7, borderLeftColor: 'transparent', borderRightColor: 'transparent',
+  },
+  hintText: { color: INK, fontWeight: '700', fontSize: 13, flexShrink: 1 },
   mapButton: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', ...shadow },
   badge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
-  badgeText: { color: INK, fontSize: 11, fontWeight: '800' },
+  badgeText: { color: INK, fontSize: 11, fontWeight: '700' },
   startDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#22C55E', borderWidth: 3 },
   selectedCard: { position: 'absolute', left: 12, right: 12, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, ...shadow },
   selectedText: { flex: 1, gap: 3 },
-  selectedName: { fontSize: 17, fontWeight: '800' },
+  selectedName: { fontSize: 17, fontWeight: '700' },
   selectedMeta: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   sheetHeader: { paddingHorizontal: 16, gap: 2 },
-  sheetTitle: { fontSize: 18, fontWeight: '800' },
+  sheetTitle: { fontSize: 18, fontWeight: '700' },
   sheetBody: { paddingHorizontal: 16, paddingBottom: 40, gap: 12 },
-  section: { fontSize: 18, fontWeight: '800', marginTop: 8 },
+  section: { fontSize: 18, fontWeight: '700', marginTop: 8 },
   cards: { flexDirection: 'row', gap: 12 },
   moreButton: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingVertical: 10 },
   createCard: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 16, marginTop: 8 },

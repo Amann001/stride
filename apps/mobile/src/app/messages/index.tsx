@@ -74,7 +74,7 @@ export default function MessagesScreen() {
                 Messaging lets you privately chat with other athletes on Stride. Start a conversation to see it here.
               </Text>
               <Pressable style={[styles.button, { backgroundColor: colors.brand }]} onPress={() => router.push('/messages/new')}>
-                <Text style={{ color: colors.onBrand, fontWeight: '800' }}>New Message</Text>
+                <Text style={{ color: colors.onBrand, fontWeight: '700' }}>New Message</Text>
               </Pressable>
             </View>
           }
@@ -93,6 +93,6 @@ const styles = StyleSheet.create({
   name: { fontSize: 16, fontWeight: '700', flexShrink: 1 },
   dot: { width: 10, height: 10, borderRadius: 5 },
   empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 10 },
-  emptyTitle: { fontSize: 20, fontWeight: '800' },
+  emptyTitle: { fontSize: 20, fontWeight: '700' },
   button: { borderRadius: 999, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
 });

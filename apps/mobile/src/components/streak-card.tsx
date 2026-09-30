@@ -5,30 +5,35 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useColors } from '@/constants/theme';
 
-const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
-
-// "Your streak": how many weeks in a row you've been active, and this week's days.
+// "Your streak", like Strava's: weeks in a row you've been active, and a Record button
+// if you haven't logged anything yet this week. "View calendar" opens your Progress.
 export function StreakCard({ stats }: { stats: UserStats | null }) {
   const colors = useColors();
   const streak = stats?.streakWeeks ?? 0;
   const loggedThisWeek = stats?.activeDays.some(Boolean) ?? false;
-  const today = (new Date().getDay() + 6) % 7; // Monday = 0
 
   const message =
     streak === 0
       ? 'Start your streak by logging an activity.'
       : loggedThisWeek
         ? `${streak} ${streak === 1 ? 'week' : 'weeks'} in a row. Keep it going!`
-        : `Log an activity this week to keep your ${streak}-week streak alive.`;
+        : `Log an activity this week to keep your streak alive.`;
 
   return (
-    <View style={[styles.card, { backgroundColor: colors.card }]}>
-      <Text style={[styles.heading, { color: colors.text }]}>Your streak</Text>
+    <View style={styles.card}>
+      <View style={styles.titleRow}>
+        <Text style={[styles.heading, { color: colors.text }]}>Your streak</Text>
+        <Pressable onPress={() => router.navigate('/profile')} hitSlop={8}>
+          <Text style={[styles.link, { color: colors.accent }]}>View calendar</Text>
+        </Pressable>
+      </View>
       <View style={styles.body}>
         <View style={styles.flame}>
-          <MaterialCommunityIcons name="fire" size={44} color={streak > 0 ? colors.brand : colors.border} />
-          <Text style={[styles.count, { color: streak > 0 ? colors.onBrand : colors.textSecondary }]}>{streak}</Text>
-          <Text style={{ color: colors.textSecondary, fontSize: 12 }}>{streak === 1 ? 'Week' : 'Weeks'}</Text>
+          <View>
+            <MaterialCommunityIcons name="fire" size={48} color={streak > 0 ? colors.brand : colors.raised} />
+            <Text style={[styles.count, { color: streak > 0 ? colors.onBrand : colors.text }]}>{streak}</Text>
+          </View>
+          <Text style={[styles.weeks, { color: colors.textSecondary }]}>{streak === 1 ? 'Week' : 'Weeks'}</Text>
         </View>
         <Text style={[styles.message, { color: colors.text }]}>{message}</Text>
         {!loggedThisWeek && (
@@ -37,40 +42,24 @@ export function StreakCard({ stats }: { stats: UserStats | null }) {
           </Pressable>
         )}
       </View>
-      <View style={styles.days}>
-        {DAY_LETTERS.map((letter, i) => {
-          const active = stats?.activeDays[i] ?? false;
-          return (
-            <View key={i} style={styles.day}>
-              <View
-                style={[
-                  styles.dot,
-                  { borderColor: i === today ? colors.accent : colors.border },
-                  active && { backgroundColor: colors.brand, borderColor: colors.brand },
-                ]}>
-                {active && <MaterialCommunityIcons name="check" size={14} color={colors.onBrand} />}
-              </View>
-              <Text style={[styles.dayLetter, { color: i === today ? colors.text : colors.textSecondary }]}>{letter}</Text>
-            </View>
-          );
-        })}
-      </View>
     </View>
   );
 }
 
+// Both carousel pages are the same height so the dots don't jump when you swipe.
+export const HIGHLIGHT_HEIGHT = 150;
+
 const styles = StyleSheet.create({
-  card: { borderRadius: 16, padding: 16, gap: 14 },
+  card: { height: HIGHLIGHT_HEIGHT, paddingHorizontal: 16, paddingTop: 16, gap: 12 },
+  titleRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   heading: { fontSize: 17, fontWeight: '700' },
+  link: { fontSize: 14, fontWeight: '700' },
   body: { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  flame: { alignItems: 'center', width: 60 },
+  flame: { alignItems: 'center', width: 56 },
   // Sits inside the flame icon.
-  count: { position: 'absolute', top: 18, left: 0, right: 0, textAlign: 'center', fontSize: 15, fontWeight: '800' },
+  count: { position: 'absolute', top: 19, left: 0, right: 0, textAlign: 'center', fontSize: 16, fontWeight: '700' },
+  weeks: { fontSize: 13, fontWeight: '600' },
   message: { flex: 1, fontSize: 15, lineHeight: 20 },
   button: { borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
   buttonText: { fontWeight: '700' },
-  days: { flexDirection: 'row', justifyContent: 'space-between' },
-  day: { alignItems: 'center', gap: 4 },
-  dot: { width: 26, height: 26, borderRadius: 13, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  dayLetter: { fontSize: 12, fontWeight: '600' },
 });
