@@ -5,7 +5,14 @@ import type {
   AuthResponse,
   ChallengesResponse,
   CreateActivityInput,
+  HeatmapKind,
   ManualActivityInput,
+  PlannedRoute,
+  PlanRouteInput,
+  RouteSummary,
+  SaveRouteInput,
+  SuggestRoutesInput,
+  UpdateActivityInput,
   User,
   UserStats,
 } from '@repo/shared';
@@ -73,4 +80,22 @@ export const api = {
   getChallenges: () => request<ChallengesResponse>(`/challenges?${TZ}`),
   joinChallenge: (id: string) => request<void>(`/challenges/${encodeURIComponent(id)}/join?${TZ}`, { method: 'POST' }),
   leaveChallenge: (id: string) => request<void>(`/challenges/${encodeURIComponent(id)}/join`, { method: 'DELETE' }),
+  updateActivity: (id: string, input: UpdateActivityInput) =>
+    request<ActivitySummary>(`/activities/${id}`, { method: 'PATCH', body: input }),
+
+  // Maps and routes
+  suggestRoutes: (input: SuggestRoutesInput) => request<RouteSummary[]>('/routes/suggest', { method: 'POST', body: input }),
+  planRoute: (input: PlanRouteInput) => request<PlannedRoute>('/routes/plan', { method: 'POST', body: input }),
+  saveRoute: (input: SaveRouteInput) => request<RouteSummary>('/routes', { method: 'POST', body: input }),
+  listRoutes: () => request<RouteSummary[]>('/routes'),
+  getRoute: (id: string) => request<RouteSummary>(`/routes/${id}`),
+  deleteRoute: (id: string) => request<void>(`/routes/${id}`, { method: 'DELETE' }),
+  nearbyRoutes: (lat: number, lng: number, sport: ActivityType) =>
+    request<RouteSummary[]>(`/routes/nearby?lat=${lat}&lng=${lng}&sport=${sport}`),
+  heatmapToken: () => request<{ token: string }>('/heatmap/token'),
 };
+
+// Web address of one heatmap tile layer, in the {z}/{x}/{y} form maps expect.
+export function heatmapTileUrl(kind: HeatmapKind, sport: ActivityType | 'all', token: string): string {
+  return `${API_URL}/heatmap/${kind}/${sport}/{z}/{x}/{y}.png?token=${encodeURIComponent(token)}`;
+}

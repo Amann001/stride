@@ -11,6 +11,8 @@ import {
   type ActivityType,
   type BestEffort,
   type TrackPoint,
+  type Visibility,
+  updateActivitySchema,
 } from '@repo/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
@@ -33,13 +35,14 @@ interface ActivityRow {
   steps: number | null;
   best_efforts: BestEffort[] | null;
   achievements: Achievement[];
+  visibility: Visibility;
   polyline: string;
   points?: TrackPoint[];
   created_at: Date;
 }
 
 const SUMMARY_COLUMNS = `id, user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
-  distance_meters, elevation_gain_meters, max_speed_mps, steps, best_efforts, achievements, polyline, created_at`;
+  distance_meters, elevation_gain_meters, max_speed_mps, steps, best_efforts, achievements, visibility, polyline, created_at`;
 
 function toSummary(row: ActivityRow): ActivitySummary {
   return {
@@ -57,12 +60,25 @@ function toSummary(row: ActivityRow): ActivitySummary {
     steps: row.steps,
     bestEfforts: row.best_efforts ?? [],
     achievements: row.achievements,
+    visibility: row.visibility,
     polyline: row.polyline,
     createdAt: row.created_at.toISOString(),
   };
 }
 
 const idParams = z.object({ id: z.uuid() });
+
+// [minLat, maxLat, minLng, maxLng] of a track.
+function boundingBox(points: TrackPoint[]): [number, number, number, number] {
+  let minLat = Infinity, maxLat = -Infinity, minLng = Infinity, maxLng = -Infinity;
+  for (const p of points) {
+    minLat = Math.min(minLat, p.lat);
+    maxLat = Math.max(maxLat, p.lat);
+    minLng = Math.min(minLng, p.lng);
+    maxLng = Math.max(maxLng, p.lng);
+  }
+  return [minLat, maxLat, minLng, maxLng];
+}
 
 export async function activityRoutes(app: FastifyInstance) {
   // Every route in this file requires login.
@@ -88,8 +104,9 @@ export async function activityRoutes(app: FastifyInstance) {
     );
     const { rows } = await pool.query<ActivityRow>(
       `INSERT INTO activities (user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
-         distance_meters, elevation_gain_meters, polyline, points, steps, max_speed_mps, best_efforts, achievements)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+         distance_meters, elevation_gain_meters, polyline, points, steps, max_speed_mps, best_efforts, achievements,
+         min_lat, max_lat, min_lng, max_lng)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
        RETURNING ${SUMMARY_COLUMNS}`,
       [
         req.user.sub,
@@ -107,6 +124,8 @@ export async function activityRoutes(app: FastifyInstance) {
         maxSpeedMps,
         JSON.stringify(bestEfforts),
         JSON.stringify(achievements),
+        // The box around the route, so heatmap tiles can find it quickly.
+        ...boundingBox(points),
       ],
     );
     return reply.code(201).send(toSummary(rows[0]));
@@ -162,6 +181,23 @@ export async function activityRoutes(app: FastifyInstance) {
     if (!rows[0]) return reply.code(404).send({ error: 'Activity not found' });
     const detail: ActivityDetail = { ...toSummary(rows[0]), points: rows[0].points ?? [] };
     return detail;
+  });
+
+  // Edit your activity's title, description, or who can see it.
+  app.patch('/activities/:id', async (req, reply) => {
+    const { id } = idParams.parse(req.params);
+    const input = updateActivitySchema.parse(req.body);
+    const { rows } = await pool.query<ActivityRow>(
+      `UPDATE activities SET
+         title = coalesce($3, title),
+         description = CASE WHEN $4::boolean THEN $5 ELSE description END,
+         visibility = coalesce($6, visibility)
+       WHERE id = $1 AND user_id = $2
+       RETURNING ${SUMMARY_COLUMNS}`,
+      [id, req.user.sub, input.title ?? null, input.description !== undefined, input.description ?? null, input.visibility ?? null],
+    );
+    if (!rows[0]) return reply.code(404).send({ error: 'Activity not found' });
+    return toSummary(rows[0]);
   });
 
   app.delete('/activities/:id', async (req, reply) => {

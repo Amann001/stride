@@ -9,8 +9,9 @@ import { AuthProvider, useAuth } from '@/lib/auth';
 SplashScreen.preventAutoHideAsync();
 
 // How long the STRIDE opening screen stays up at minimum, and how long it takes to fade away.
-const MIN_INTRO_MS = 2500;
-const FADE_MS = 400;
+// Short, like Strava's: just long enough to register the brand.
+const MIN_INTRO_MS = 900;
+const FADE_MS = 250;
 
 // The root of the app. Logged-out users only see the login screen;
 // logged-in users see the tabs and activity screens.
@@ -45,6 +46,9 @@ function RootNavigator() {
             <Stack.Screen name="activity/[id]" options={{ title: 'Activity', headerBackTitle: 'Back' }} />
             <Stack.Screen name="manual" options={{ title: 'Add Activity', presentation: 'modal' }} />
             <Stack.Screen name="notifications" options={{ title: 'Notifications', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="route/[id]" options={{ title: 'Route', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="routes/saved" options={{ title: 'Saved Routes', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="routes/create" options={{ title: 'Create Route', headerBackTitle: 'Back' }} />
           </Stack.Protected>
           <Stack.Protected guard={!user}>
             <Stack.Screen name="login" options={{ headerShown: false }} />
