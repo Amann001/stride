@@ -2,6 +2,9 @@ import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
+import { cleanTrack, type ActivityType, type TrackPoint } from '@repo/shared';
+
+import { analyseActivity } from './analysis';
 import { pool } from './db';
 
 // Runs every .sql file in /migrations that hasn't run yet, in name order.
@@ -37,7 +40,31 @@ async function main() {
       client.release();
     }
   }
+  await backfillAnalysis();
   console.log('Database is up to date.');
+}
+
+// Fills in best efforts, top speed and achievements for activities saved before those
+// existed. Oldest first, so each one is compared with the ones already filled in.
+async function backfillAnalysis() {
+  const { rows } = await pool.query<{ id: string; user_id: string; type: ActivityType; points: TrackPoint[]; steps: number | null }>(
+    'SELECT id, user_id, type, points, steps FROM activities WHERE best_efforts IS NULL ORDER BY started_at',
+  );
+  for (const r of rows) {
+    const points = cleanTrack(r.points, r.type);
+    if (points.length < 2) {
+      await pool.query(`UPDATE activities SET best_efforts = '[]' WHERE id = $1`, [r.id]);
+      continue;
+    }
+    const a = await analyseActivity(pool, r.user_id, r.type, points, r.steps);
+    await pool.query('UPDATE activities SET max_speed_mps = $2, best_efforts = $3, achievements = $4 WHERE id = $1', [
+      r.id,
+      a.maxSpeedMps,
+      JSON.stringify(a.bestEfforts),
+      JSON.stringify(a.achievements),
+    ]);
+  }
+  if (rows.length) console.log(`Analysed ${rows.length} earlier activities.`);
 }
 
 main()
