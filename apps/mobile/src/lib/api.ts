@@ -2,8 +2,18 @@ import type {
   ActivityDetail,
   ActivitySummary,
   ActivityType,
+  AthleteProfile,
+  AthleteSummary,
   AuthResponse,
+  Badges,
   ChallengesResponse,
+  Club,
+  ClubDetail,
+  Comment,
+  Conversation,
+  CreateClubInput,
+  Message,
+  Notification,
   CreateActivityInput,
   HeatmapKind,
   ManualActivityInput,
@@ -73,7 +83,8 @@ export const api = {
   deleteActivity: (id: string) => request<void>(`/activities/${id}`, { method: 'DELETE' }),
   createManualActivity: (input: ManualActivityInput) =>
     request<ActivitySummary>('/activities/manual', { method: 'POST', body: input }),
-  updateProfile: (name: string) => request<User>('/me', { method: 'PATCH', body: { name } }),
+  updateProfile: (input: { name: string; bio?: string; location?: string }) =>
+    request<User>('/me', { method: 'PATCH', body: input }),
   getStats: () => request<UserStats>(`/stats?${TZ}`),
   setWeeklyGoal: (type: ActivityType, targetMeters: number) =>
     request<void>(`/goals/${type}`, { method: 'PUT', body: { targetMeters } }),
@@ -93,6 +104,41 @@ export const api = {
   nearbyRoutes: (lat: number, lng: number, sport: ActivityType) =>
     request<RouteSummary[]>(`/routes/nearby?lat=${lat}&lng=${lng}&sport=${sport}`),
   heatmapToken: () => request<{ token: string }>('/heatmap/token'),
+
+  // Friends
+  feed: (before?: string) => request<ActivitySummary[]>(`/feed${before ? `?before=${encodeURIComponent(before)}` : ''}`),
+  searchAthletes: (q: string) => request<AthleteSummary[]>(`/athletes/search?q=${encodeURIComponent(q)}`),
+  suggestedAthletes: () => request<AthleteSummary[]>('/athletes/suggested'),
+  athlete: (id: string) => request<AthleteProfile>(`/athletes/${id}`),
+  athleteActivities: (id: string) => request<ActivitySummary[]>(`/athletes/${id}/activities`),
+  connections: (id: string, list: 'followers' | 'following') => request<AthleteSummary[]>(`/athletes/${id}/${list}`),
+  follow: (id: string) => request<void>(`/athletes/${id}/follow`, { method: 'POST' }),
+  unfollow: (id: string) => request<void>(`/athletes/${id}/follow`, { method: 'DELETE' }),
+  followAll: (ids: string[]) => request<void>('/athletes/follow-all', { method: 'POST', body: { ids } }),
+  giveKudos: (activityId: string) => request<void>(`/activities/${activityId}/kudos`, { method: 'POST' }),
+  removeKudos: (activityId: string) => request<void>(`/activities/${activityId}/kudos`, { method: 'DELETE' }),
+  kudosList: (activityId: string) => request<AthleteSummary[]>(`/activities/${activityId}/kudos`),
+  comments: (activityId: string) => request<Comment[]>(`/activities/${activityId}/comments`),
+  addComment: (activityId: string, body: string) =>
+    request<Comment>(`/activities/${activityId}/comments`, { method: 'POST', body: { body } }),
+  deleteComment: (id: string) => request<void>(`/comments/${id}`, { method: 'DELETE' }),
+  notifications: () => request<Notification[]>('/notifications'),
+  markNotificationsRead: () => request<void>('/notifications/read', { method: 'POST' }),
+  badges: () => request<Badges>('/badges'),
+  conversations: () => request<Conversation[]>('/conversations'),
+  startConversation: (athleteId: string) => request<Conversation>('/conversations', { method: 'POST', body: { athleteId } }),
+  messages: (conversationId: string, after?: string) =>
+    request<Message[]>(`/conversations/${conversationId}/messages${after ? `?after=${encodeURIComponent(after)}` : ''}`),
+  sendMessage: (conversationId: string, body: string) =>
+    request<Message>(`/conversations/${conversationId}/messages`, { method: 'POST', body: { body } }),
+  markConversationRead: (conversationId: string) => request<void>(`/conversations/${conversationId}/read`, { method: 'POST' }),
+  clubs: (q = '', sport?: ActivityType) =>
+    request<Club[]>(`/clubs?q=${encodeURIComponent(q)}${sport ? `&sport=${sport}` : ''}`),
+  myClubs: () => request<Club[]>('/clubs/mine'),
+  club: (id: string) => request<ClubDetail>(`/clubs/${id}`),
+  createClub: (input: CreateClubInput) => request<Club>('/clubs', { method: 'POST', body: input }),
+  joinClub: (id: string) => request<void>(`/clubs/${id}/join`, { method: 'POST' }),
+  leaveClub: (id: string) => request<void>(`/clubs/${id}/join`, { method: 'DELETE' }),
 };
 
 // Web address of one heatmap tile layer, in the {z}/{x}/{y} form maps expect.

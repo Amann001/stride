@@ -51,7 +51,21 @@
           "motionPermission": "We count your steps while you record a run, walk or hike."
         }
       ],
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "We use the camera to scan a friend's Stride QR code so you can follow them.",
+          "microphonePermission": false,
+          "recordAudioAndroid": false
+        }
+      ],
+      [
+        "expo-contacts",
+        {
+          "contactsPermission": "We use your contacts so you can invite friends to Stride. They're never uploaded."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

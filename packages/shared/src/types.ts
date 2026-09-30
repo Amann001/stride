@@ -8,6 +8,8 @@ export interface User {
   id: string;
   name: string;
   email: string;
+  bio: string | null;
+  location: string | null;
   createdAt: string;
 }
 
@@ -39,6 +41,11 @@ export interface ActivitySummary {
   // Encoded route line (Google polyline format), enough to draw a small map.
   polyline: string;
   createdAt: string;
+  // Who did it, and the social bits shown on feed cards.
+  athlete: { id: string; name: string };
+  kudosCount: number;
+  commentCount: number;
+  hasKudoed: boolean;
 }
 
 // A single activity with all its GPS points.

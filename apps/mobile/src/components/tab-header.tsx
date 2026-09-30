@@ -21,11 +21,13 @@ export function TabHeader({ left, title, right }: { left?: ReactNode; title?: Re
   );
 }
 
-export function HeaderButton({ icon, onPress, label }: { icon: IconName; onPress: () => void; label: string }) {
+// `dot` shows a small red dot, e.g. for unread messages.
+export function HeaderButton({ icon, onPress, label, dot = false }: { icon: IconName; onPress: () => void; label: string; dot?: boolean }) {
   const colors = useColors();
   return (
-    <Pressable onPress={onPress} hitSlop={8} accessibilityLabel={label} style={styles.button}>
+    <Pressable onPress={onPress} hitSlop={8} accessibilityLabel={dot ? `${label}, new` : label} style={styles.button}>
       <MaterialCommunityIcons name={icon} size={27} color={colors.text} />
+      {dot && <View style={[styles.dot, { borderColor: colors.background }]} />}
     </Pressable>
   );
 }
@@ -44,5 +46,6 @@ const styles = StyleSheet.create({
   center: { flex: 1, alignItems: 'center' },
   title: { fontSize: 18, fontWeight: '700' },
   button: { padding: 2 },
+  dot: { position: 'absolute', top: 1, right: 0, width: 11, height: 11, borderRadius: 6, backgroundColor: '#EF4444', borderWidth: 2 },
   wordmark: { fontSize: 22, fontWeight: '900', fontStyle: 'italic', letterSpacing: 2 },
 });
