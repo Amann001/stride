@@ -47,10 +47,28 @@ If the app says it can't reach the server, check the "Server" address at the bot
   we'll set up in a later phase.
 - The server works out distance, time and elevation itself from the GPS points, so the numbers
   are the same everywhere.
+- After pulling new code, run `npm run db:migrate` again. It adds any new tables or columns and
+  fills in data for activities you recorded before (e.g. personal records).
+
+## Activity types
+
+Each type has its own features. What each one measures lives in `packages/shared/src/categories.ts`.
+
+| | Live on the Record screen | Voice update | On the activity screen |
+|---|---|---|---|
+| **Run** | Time, distance, avg pace, current split pace | every 1 km | Splits, best efforts (400m to marathon), cadence |
+| **Ride** | Live speed, max speed, avg speed | every 5 km | 5 km splits, best efforts (5K to 100K), max speed |
+| **Walk** | Time, distance, steps | every 1 km | Steps, splits, best efforts (1K to 10K) |
+| **Hike** | Time, distance, climb, altitude | every 1 km | Elevation profile first, highest point |
+
+Every saved activity is compared with your earlier ones of the same type to award achievements:
+first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most steps. The Home tab
+shows your weekly streak and this week's totals; the You tab shows totals and records per type.
 
 ## Roadmap
 
 - [x] **Phase 1:** accounts, GPS recording, activity list and maps (mobile + web)
+- [x] **Phase 1.5:** per-type features, achievements, weekly streak, personal records
 - [ ] **Phase 2:** follow people, feed, kudos, comments
-- [ ] **Phase 3:** profile stats, personal records, charts
+- [ ] **Phase 3:** charts over time, goals
 - [ ] **Phase 4:** segments and leaderboards (PostGIS), challenges, clubs
