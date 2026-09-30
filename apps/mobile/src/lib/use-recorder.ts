@@ -1,4 +1,4 @@
-import { distanceBetween, type TrackPoint } from '@repo/shared';
+import { distanceBetween, isGpsJump, type ActivityType, type TrackPoint } from '@repo/shared';
 import * as Location from 'expo-location';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
@@ -8,7 +8,10 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export type RecorderStatus = 'idle' | 'recording' | 'paused';
 
 // Readings less accurate than this (in meters) are skipped, since they make the route jumpy.
-const MAX_ACCURACY_M = 30;
+const MAX_ACCURACY_M = 20;
+// Ask for a new reading after every meter moved, so the line and distance update about
+// once a second while walking (at 3 m a real walk only updated every ~3 seconds).
+const DISTANCE_INTERVAL_M = 1;
 
 export function useRecorder() {
   const [status, setStatus] = useState<RecorderStatus>('idle');
@@ -19,6 +22,7 @@ export function useRecorder() {
 
   const subscription = useRef<Location.LocationSubscription | null>(null);
   const lastPoint = useRef<TrackPoint | null>(null);
+  const activityType = useRef<ActivityType>('run');
   // Timer bookkeeping: time from finished stretches plus when the current stretch began.
   const accumulatedMs = useRef(0);
   const stretchStart = useRef<number | null>(null);
@@ -30,7 +34,7 @@ export function useRecorder() {
 
   const startWatching = useCallback(async () => {
     subscription.current = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.BestForNavigation, distanceInterval: 3 },
+      { accuracy: Location.Accuracy.BestForNavigation, distanceInterval: DISTANCE_INTERVAL_M },
       (loc) => {
         if (loc.coords.accuracy != null && loc.coords.accuracy > MAX_ACCURACY_M) return;
         const point: TrackPoint = {
@@ -40,6 +44,8 @@ export function useRecorder() {
           t: Math.round(loc.timestamp),
         };
         const prev = lastPoint.current;
+        // Skip GPS glitches, e.g. a point that would mean walking at 25 km/h.
+        if (prev && isGpsJump(prev, point, activityType.current)) return;
         if (prev) setDistance((d) => d + distanceBetween(prev, point));
         lastPoint.current = point;
         setPoints((p) => [...p, point]);
@@ -60,8 +66,9 @@ export function useRecorder() {
   // Stop GPS if the screen is closed mid-recording.
   useEffect(() => stopWatching, [stopWatching]);
 
-  const start = useCallback(async () => {
+  const start = useCallback(async (type: ActivityType) => {
     setError(null);
+    activityType.current = type;
     const { granted } = await Location.requestForegroundPermissionsAsync();
     if (!granted) {
       setError('Location permission is needed to record. Turn it on in Settings > Privacy > Location Services.');

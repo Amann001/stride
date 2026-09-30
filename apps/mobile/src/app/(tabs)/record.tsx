@@ -92,7 +92,7 @@ export default function RecordScreen() {
           {saving ? (
             <ActivityIndicator size="large" color={colors.accent} />
           ) : rec.status === 'idle' ? (
-            <RoundButton label="Start" color={colors.brand} textColor={colors.onBrand} onPress={rec.start} />
+            <RoundButton label="Start" color={colors.brand} textColor={colors.onBrand} onPress={() => rec.start(type)} />
           ) : rec.status === 'recording' ? (
             <RoundButton label="Pause" color={colors.text} textColor={colors.card} onPress={rec.pause} />
           ) : (

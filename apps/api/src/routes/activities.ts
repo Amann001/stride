@@ -1,4 +1,5 @@
 import {
+  cleanTrack,
   computeStats,
   createActivitySchema,
   encodePolyline,
@@ -58,7 +59,11 @@ export async function activityRoutes(app: FastifyInstance) {
   // from the GPS points instead of trusting numbers sent by the phone.
   app.post('/activities', async (req, reply) => {
     const input = createActivitySchema.parse(req.body);
-    const points = [...input.points].sort((a, b) => a.t - b.t);
+    // Sort by time and drop GPS glitches (impossible jumps) before doing any maths.
+    const points = cleanTrack(input.points, input.type);
+    if (points.length < 2) {
+      return reply.code(400).send({ error: 'Not enough good GPS points to save this activity' });
+    }
     const stats = computeStats(points);
     const { rows } = await pool.query<ActivityRow>(
       `INSERT INTO activities (user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,

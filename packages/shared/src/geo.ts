@@ -1,4 +1,4 @@
-import type { TrackPoint } from './schemas';
+import type { ActivityType, TrackPoint } from './schemas';
 
 const EARTH_RADIUS_M = 6_371_000;
 const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -14,8 +14,61 @@ export function distanceBetween(a: { lat: number; lng: number }, b: { lat: numbe
 
 // Below this speed (m/s) we treat you as standing still, e.g. waiting at a traffic light.
 const MOVING_SPEED_THRESHOLD = 0.5;
-// Ignore altitude wiggles smaller than this, since phone GPS altitude is noisy.
-const ELEVATION_NOISE_M = 3;
+
+// Phone GPS altitude wobbles by several meters even on flat ground. We average it over
+// ±20 seconds, then only count a climb once it rises at least 5 m. Tested on a real flat
+// campus walk: raw counting said 18 m of climbing, this says 5 m.
+const ELEVATION_SMOOTHING_SEC = 20;
+const ELEVATION_NOISE_M = 5;
+
+// Fastest believable speed for each activity, in km/h. A GPS point that would mean moving
+// faster than this since the last good point is a glitch and gets dropped.
+const MAX_SPEED_KMH: Record<ActivityType, number> = { walk: 15, hike: 15, run: 40, ride: 100 };
+
+// True if going from `prev` to `next` would need an impossible speed for this activity.
+export function isGpsJump(prev: TrackPoint, next: TrackPoint, type: ActivityType): boolean {
+  const dt = (next.t - prev.t) / 1000;
+  if (dt <= 0) return true;
+  return (distanceBetween(prev, next) / dt) * 3.6 > MAX_SPEED_KMH[type];
+}
+
+// Removes GPS glitches from a track, keeping points in time order.
+export function cleanTrack(points: TrackPoint[], type: ActivityType): TrackPoint[] {
+  const out: TrackPoint[] = [];
+  for (const p of [...points].sort((a, b) => a.t - b.t)) {
+    const last = out[out.length - 1];
+    if (!last || !isGpsJump(last, p, type)) out.push(p);
+  }
+  return out;
+}
+
+// Total climbing in meters, from smoothed altitude readings.
+function elevationGain(points: TrackPoint[]): number {
+  const alts = points.filter((p): p is TrackPoint & { alt: number } => p.alt != null);
+  if (alts.length < 2) return 0;
+  // Moving average over a time window, using two pointers so long tracks stay fast.
+  const smooth: number[] = [];
+  let lo = 0;
+  let hi = 0;
+  let sum = 0;
+  const win = ELEVATION_SMOOTHING_SEC * 1000;
+  for (const p of alts) {
+    while (hi < alts.length && alts[hi].t <= p.t + win) sum += alts[hi++].alt;
+    while (alts[lo].t < p.t - win) sum -= alts[lo++].alt;
+    smooth.push(sum / (hi - lo));
+  }
+  let gain = 0;
+  let ref = smooth[0];
+  for (const a of smooth) {
+    if (a - ref >= ELEVATION_NOISE_M) {
+      gain += a - ref;
+      ref = a;
+    } else if (ref - a >= ELEVATION_NOISE_M) {
+      ref = a;
+    }
+  }
+  return gain;
+}
 
 export interface TrackStats {
   distanceMeters: number;
@@ -28,8 +81,6 @@ export interface TrackStats {
 export function computeStats(points: TrackPoint[]): TrackStats {
   let distance = 0;
   let moving = 0;
-  let gain = 0;
-  let lastAlt: number | null = null;
 
   for (let i = 1; i < points.length; i++) {
     const prev = points[i - 1];
@@ -40,16 +91,7 @@ export function computeStats(points: TrackPoint[]): TrackStats {
     if (dt > 0 && d / dt > MOVING_SPEED_THRESHOLD) moving += dt;
   }
 
-  for (const p of points) {
-    if (p.alt == null) continue;
-    if (lastAlt == null) {
-      lastAlt = p.alt;
-    } else if (Math.abs(p.alt - lastAlt) >= ELEVATION_NOISE_M) {
-      if (p.alt > lastAlt) gain += p.alt - lastAlt;
-      lastAlt = p.alt;
-    }
-  }
-
+  const gain = elevationGain(points);
   const elapsed = points.length > 1 ? (points[points.length - 1].t - points[0].t) / 1000 : 0;
   return {
     distanceMeters: Math.round(distance * 10) / 10,
