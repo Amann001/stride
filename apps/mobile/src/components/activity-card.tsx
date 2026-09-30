@@ -21,8 +21,9 @@ export function ActivityCard({ activity }: { activity: ActivitySummary }) {
   });
 
   return (
+    // <Link asChild> only accepts a single style object on its child, not an array, so merge them first.
     <Link href={{ pathname: '/activity/[id]', params: { id: activity.id } }} asChild>
-      <Pressable style={[styles.card, { backgroundColor: colors.card, borderColor: colors.border }]}>
+      <Pressable style={StyleSheet.flatten([styles.card, { backgroundColor: colors.card, borderColor: colors.border }])}>
         <Text style={[styles.meta, { color: colors.textSecondary }]}>
           {ACTIVITY_LABELS[activity.type]} · {date}
         </Text>

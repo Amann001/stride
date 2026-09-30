@@ -4,8 +4,11 @@
 Lime is for fills and dark backgrounds. On white, use deep olive `#4D6B00` for text and links,
 since lime text on white is hard to read.
 
-**Wordmark font:** Barlow ExtraBold Italic (free, SIL Open Font License). The lettering in these
+**Wordmark font:** Montserrat Black, upright (free, SIL Open Font License). The lettering in these
 files is converted to shapes, so it looks the same everywhere without installing the font.
+
+**Opening screen:** the lime STRIDE wordmark centred on black, about 45% of the screen width
+(`apps/mobile/assets/images/splash-wordmark.png`, 180 wide in `app.json`).
 
 | File | Use it for |
 |---|---|

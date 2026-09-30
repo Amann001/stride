@@ -12,7 +12,8 @@ export function Navbar() {
     <header className="bg-brand-ink">
       <nav className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3">
         <Link href={user ? "/dashboard" : "/"} aria-label="Stride home">
-          <Image src="/stride-logo-on-dark.svg" alt="Stride" width={110} height={30} priority />
+          {/* width/height 0 + auto width lets the SVG keep its own proportions at 28px tall. */}
+          <Image src="/stride-logo-on-dark.svg" alt="Stride" width={0} height={0} style={{ height: 28, width: "auto" }} priority />
         </Link>
         {user ? (
           <div className="flex items-center gap-4 text-sm text-zinc-300">

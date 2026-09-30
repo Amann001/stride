@@ -15,6 +15,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useColors } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 
+const LOGO_ON_DARK = require('@/assets/images/logo-on-dark.png');
+const LOGO_ON_LIGHT = require('@/assets/images/logo-on-light.png');
+const LOGO_HEIGHT = 48;
+
+// Sizes the logo from the image file's own proportions, so it never stretches.
+function logoSize(source: number) {
+  const { width, height } = Image.resolveAssetSource(source);
+  return { height: LOGO_HEIGHT, width: (LOGO_HEIGHT * width) / height };
+}
+
 // One screen for both "Log in" and "Sign up"; the link at the bottom switches mode.
 export default function LoginScreen() {
   const colors = useColors();
@@ -46,8 +56,8 @@ export default function LoginScreen() {
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.background }]}>
       <KeyboardAvoidingView behavior="padding" style={styles.container}>
         <Image
-          source={isDark ? require('@/assets/images/logo-on-dark.png') : require('@/assets/images/logo-on-light.png')}
-          style={[styles.logo, { aspectRatio: isDark ? 367.67 / 100 : 354.44 / 100 }]}
+          source={isDark ? LOGO_ON_DARK : LOGO_ON_LIGHT}
+          style={[styles.logo, logoSize(isDark ? LOGO_ON_DARK : LOGO_ON_LIGHT)]}
           resizeMode="contain"
           accessibilityLabel="Stride"
         />
@@ -90,7 +100,7 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1 },
   container: { flex: 1, justifyContent: 'center', padding: 24 },
-  logo: { height: 48, alignSelf: 'flex-start', marginBottom: 16 },
+  logo: { alignSelf: 'flex-start', marginBottom: 16 },
   subtitle: { fontSize: 16, marginBottom: 28 },
   input: { borderWidth: 1, borderRadius: 10, paddingHorizontal: 14, paddingVertical: 14, fontSize: 16, marginBottom: 12 },
   error: { marginBottom: 12 },
