@@ -42,7 +42,9 @@ function RootNavigator() {
         <Stack>
           <Stack.Protected guard={!!user}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="activity/[id]" options={{ title: 'Activity' }} />
+            <Stack.Screen name="activity/[id]" options={{ title: 'Activity', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="manual" options={{ title: 'Add Activity', presentation: 'modal' }} />
+            <Stack.Screen name="notifications" options={{ title: 'Notifications', headerBackTitle: 'Back' }} />
           </Stack.Protected>
           <Stack.Protected guard={!user}>
             <Stack.Screen name="login" options={{ headerShown: false }} />

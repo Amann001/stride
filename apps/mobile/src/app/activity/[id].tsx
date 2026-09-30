@@ -74,7 +74,8 @@ export default function ActivityScreen() {
 
   return (
     <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
-      <RouteMap coords={activity.points} style={styles.map} />
+      {/* Activities added by hand have no GPS track, so no map. */}
+      {activity.points.length > 1 && <RouteMap coords={activity.points} style={styles.map} />}
 
       <View style={[styles.card, { backgroundColor: colors.card }]}>
         <View style={styles.header}>

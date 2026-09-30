@@ -10,7 +10,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 export type RecorderStatus = 'idle' | 'recording' | 'paused';
 
 // Readings less accurate than this (in meters) are skipped, since they make the route jumpy.
-const MAX_ACCURACY_M = 20;
+export const MAX_ACCURACY_M = 20;
 // Ask for a new reading after every meter moved, so the line and distance update about
 // once a second while walking (at 3 m a real walk only updated every ~3 seconds).
 const DISTANCE_INTERVAL_M = 1;
