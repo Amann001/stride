@@ -17,6 +17,7 @@ import {
   type UserStats,
 } from '@repo/shared';
 import { router, useFocusEffect } from 'expo-router';
+import * as WebBrowser from 'expo-web-browser';
 import { useCallback, useState, type ReactNode } from 'react';
 import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 
@@ -29,7 +30,7 @@ import { HeaderButton, TabHeader } from '@/components/tab-header';
 import { WeeklyChart } from '@/components/weekly-chart';
 import { CATEGORY_LOOKS, type IconName } from '@/constants/categories';
 import { INK, LIME, useColors } from '@/constants/theme';
-import { API_URL, api } from '@/lib/api';
+import { API_URL, api, privacyUrl, termsUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 type Section = 'progress' | 'activities' | 'more';
@@ -329,10 +330,14 @@ function More({ stats, trophies, activities, onLogOut }: {
       <Card>
         <Text style={[styles.cardTitle, { color: colors.text }]}>Settings</Text>
         <SettingRow label="Units of Measurement" value="Metric" />
-        <SettingRow label="Server" value={API_URL} />
+        {__DEV__ && <SettingRow label="Server" value={API_URL} />}
+        <LinkRow label="Blocked People" onPress={() => router.push('/blocked')} />
+        <LinkRow label="Privacy Policy" onPress={() => WebBrowser.openBrowserAsync(privacyUrl())} />
+        <LinkRow label="Terms of Use" onPress={() => WebBrowser.openBrowserAsync(termsUrl())} />
         <Pressable onPress={onLogOut} style={[styles.logout, { borderColor: colors.danger }]}>
           <Text style={{ color: colors.danger, fontWeight: '700' }}>Log Out</Text>
         </Pressable>
+        <LinkRow label="Delete Account" danger onPress={() => router.push('/delete-account')} />
       </Card>
     </View>
   );
@@ -383,6 +388,17 @@ function SettingRow({ label, value }: { label: string; value: string }) {
       <Text style={{ color: colors.text, fontSize: 15 }}>{label}</Text>
       <Text style={{ color: colors.textSecondary, flexShrink: 1 }} numberOfLines={1}>{value}</Text>
     </View>
+  );
+}
+
+// A settings row that opens something (a screen or a web page).
+function LinkRow({ label, onPress, danger = false }: { label: string; onPress: () => void; danger?: boolean }) {
+  const colors = useColors();
+  return (
+    <Pressable style={styles.settingRow} onPress={onPress} accessibilityRole="button">
+      <Text style={{ color: danger ? colors.danger : colors.text, fontSize: 15 }}>{label}</Text>
+      <MaterialCommunityIcons name="chevron-right" size={20} color={colors.textSecondary} />
+    </Pressable>
   );
 }
 

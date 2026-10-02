@@ -29,6 +29,8 @@ export interface AthleteProfile extends AthleteSummary {
   weekDistanceMeters: number;
   yearDistanceMeters: number;
   isMe: boolean;
+  // You blocked them: show Unblock instead of Follow.
+  blockedByYou: boolean;
 }
 
 export interface Comment {
@@ -102,6 +104,26 @@ export const commentSchema = z.object({ body: z.string().trim().min(1, 'Write so
 export const messageSchema = z.object({ body: z.string().trim().min(1, 'Write something first').max(2000) });
 export const startConversationSchema = z.object({ athleteId: z.uuid() });
 export const followAllSchema = z.object({ ids: z.array(z.uuid()).min(1).max(50) });
+
+// Reporting a person (and optionally the activity, comment or message that's the problem).
+export const REPORT_REASONS = ['spam', 'harassment', 'inappropriate', 'impersonation', 'other'] as const;
+export type ReportReason = (typeof REPORT_REASONS)[number];
+export const REPORT_REASON_LABELS: Record<ReportReason, string> = {
+  spam: 'Spam or scam',
+  harassment: 'Harassment or bullying',
+  inappropriate: 'Inappropriate content',
+  impersonation: 'Pretending to be someone else',
+  other: 'Something else',
+};
+export const reportSchema = z.object({
+  targetUserId: z.uuid(),
+  activityId: z.uuid().optional(),
+  commentId: z.uuid().optional(),
+  messageId: z.uuid().optional(),
+  reason: z.enum(REPORT_REASONS),
+  details: z.string().trim().max(1000).optional(),
+});
+export type ReportInput = z.infer<typeof reportSchema>;
 export const createClubSchema = z.object({
   name: z.string().trim().min(2, 'Give your club a name').max(80),
   sport: activityTypeSchema,

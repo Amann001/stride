@@ -32,15 +32,15 @@ function RootNavigator() {
 
   // Upload any activities that were saved on the phone while offline: when you log in or
   // open the app, and whenever the app comes back to the front.
-  const loggedIn = !!user;
+  const userId = user?.id;
   useEffect(() => {
-    if (!loggedIn) return;
-    uploadPending().catch(() => {});
+    if (!userId) return;
+    uploadPending(userId).catch(() => {});
     const sub = AppState.addEventListener('change', (state) => {
-      if (state === 'active') uploadPending().catch(() => {});
+      if (state === 'active') uploadPending(userId).catch(() => {});
     });
     return () => sub.remove();
-  }, [loggedIn]);
+  }, [userId]);
 
   // Once login state is known and the minimum time is up, fade the intro out.
   useEffect(() => {
@@ -72,6 +72,8 @@ function RootNavigator() {
             <Stack.Screen name="club/[id]" options={{ title: 'Club', headerBackTitle: 'Back' }} />
             <Stack.Screen name="clubs/new" options={{ title: 'Create a Club', presentation: 'modal' }} />
             <Stack.Screen name="edit-profile" options={{ title: 'Edit Profile', presentation: 'modal' }} />
+            <Stack.Screen name="blocked" options={{ title: 'Blocked People', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="delete-account" options={{ title: 'Delete Account', headerBackTitle: 'Back' }} />
           </Stack.Protected>
           <Stack.Protected guard={!user}>
             <Stack.Screen name="login" options={{ headerShown: false }} />

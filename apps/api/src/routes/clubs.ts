@@ -114,7 +114,7 @@ export async function clubRoutes(app: FastifyInstance) {
       ...toClub(club),
       members: members.rows,
       leaderboard: leaders.rows.map((l) => ({ athlete: { id: l.id, name: l.name }, distanceMeters: l.distance, activityCount: l.n })),
-      recentActivities: recent.rows.map(toSummary),
+      recentActivities: recent.rows.map((r) => toSummary(r, req.user.sub)),
     };
     return detail;
   });

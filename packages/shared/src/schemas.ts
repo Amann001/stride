@@ -17,6 +17,11 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+// Deleting your account asks for your password once more.
+export const deleteAccountSchema = z.object({
+  password: z.string().min(1, 'Enter your password to confirm'),
+});
+
 // One GPS reading. `t` is a Unix timestamp in milliseconds.
 export const trackPointSchema = z.object({
   lat: z.number().min(-90).max(90),

@@ -151,3 +151,25 @@ export function decodePolyline(str: string, precision = 5): { lat: number; lng: 
   }
   return coords;
 }
+
+// Privacy zone, like Strava's: other people don't see the first and last part of your route,
+// which is usually where you live. Distance, time and pace are not affected, only the map.
+export const PRIVACY_ZONE_METERS = 200;
+
+// Drops the points within `meters` of the start and of the end, measured along the route.
+// A route too short to have anything left in the middle comes back empty (no map shown).
+export function hideEnds<T extends { lat: number; lng: number }>(points: T[], meters = PRIVACY_ZONE_METERS): T[] {
+  if (points.length < 2) return [];
+  const along: number[] = [0];
+  for (let i = 1; i < points.length; i++) along.push(along[i - 1] + distanceBetween(points[i - 1], points[i]));
+  const total = along[along.length - 1];
+  if (total <= meters * 2) return [];
+  const kept = points.filter((_, i) => along[i] >= meters && along[i] <= total - meters);
+  return kept.length >= 2 ? kept : [];
+}
+
+// Same as hideEnds, for a route stored as an encoded polyline.
+export function hidePolylineEnds(polyline: string, meters = PRIVACY_ZONE_METERS): string {
+  if (!polyline) return '';
+  return encodePolyline(hideEnds(decodePolyline(polyline), meters));
+}
