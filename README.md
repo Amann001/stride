@@ -147,10 +147,13 @@ Restoring replaces the current data with the backup's, so try it on a new Neon b
 
 ### Password reset emails
 "Forgot password" sends a 6-digit code by email. Until email is set up it says it isn't
-available yet. To turn it on, add these on Render (Environment): `SMTP_HOST`, `SMTP_PORT`
-(587), `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` (e.g. `Stride <stride.app@example.com>`).
-Use a dedicated address, e.g. Brevo's free plan (smtp-relay.brevo.com) or a new Gmail with an
-app password (smtp.gmail.com).
+available yet.
+
+Render's free plan blocks the normal email (SMTP) ports, so emails go through **Brevo's web
+API** (free, 300 a day). On Render (Environment) set `BREVO_API_KEY` and
+`MAIL_FROM` = `Stride <stride.supportteam@gmail.com>` (the sender must be verified in Brevo).
+On paid hosting, SMTP works instead: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`.
+If an email fails to send, the reason shows up in `npm run ops`.
 
 ## Safety and privacy
 
