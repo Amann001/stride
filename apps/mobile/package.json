@@ -52,7 +52,8 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "publish:ios": "npx eas-cli@latest update --channel production --platform ios --environment production --auto --non-interactive"
   },
   "private": true
 }

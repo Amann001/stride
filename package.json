@@ -10,6 +10,7 @@
     "dev:web": "npm run dev --workspace web",
     "dev:mobile": "npm run start --workspace mobile",
     "db:migrate": "npm run migrate --workspace api",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "publish:app": "npm run publish:ios --workspace mobile"
   }
 }
