@@ -1,0 +1,26 @@
+# Render Blueprint: runs Stride's backend (apps/api) in the cloud, 24/7.
+# Render reads this file when you create a "Blueprint" from the GitHub repo.
+# Docs: https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: stride-api
+    runtime: node
+    plan: free
+    # Same region as the Neon database, so database calls are fast.
+    region: singapore
+    branch: main
+    # Redeploy whenever main changes.
+    autoDeploy: true
+    # Only install what the API needs, not the iPhone app or website.
+    buildCommand: npm ci --workspace api --include-workspace-root
+    # Apply any new database migrations, then start the server.
+    startCommand: npm run migrate --workspace api && npm run start --workspace api
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_VERSION
+        value: "24"
+      # Secret values: Render asks you to paste these when you create the Blueprint.
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
