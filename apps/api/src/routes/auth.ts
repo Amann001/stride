@@ -1,4 +1,4 @@
-import { loginSchema, registerSchema, type AuthResponse, type User } from '@repo/shared';
+import { loginSchema, registerSchema, updateProfileSchema, type AuthResponse, type User } from '@repo/shared';
 import type { FastifyInstance } from 'fastify';
 
 import { pool } from '../db';
@@ -49,6 +49,14 @@ export async function authRoutes(app: FastifyInstance) {
 
   app.get('/me', { onRequest: [app.authenticate] }, async (req, reply) => {
     const { rows } = await pool.query<UserRow>('SELECT * FROM users WHERE id = $1', [req.user.sub]);
+    if (!rows[0]) return reply.code(404).send({ error: 'User not found' });
+    return toUser(rows[0]);
+  });
+
+  // Edit profile: currently just your display name.
+  app.patch('/me', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const { name } = updateProfileSchema.parse(req.body);
+    const { rows } = await pool.query<UserRow>('UPDATE users SET name = $2 WHERE id = $1 RETURNING *', [req.user.sub, name]);
     if (!rows[0]) return reply.code(404).send({ error: 'User not found' });
     return toUser(rows[0]);
   });

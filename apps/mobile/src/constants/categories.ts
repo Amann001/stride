@@ -15,6 +15,12 @@ export interface CategoryLook {
   tagline: string;
 }
 
+// How sports are grouped in the sport picker.
+export const SPORT_GROUPS: { title: string; types: ActivityType[] }[] = [
+  { title: 'Foot Sports', types: ['run', 'walk', 'hike'] },
+  { title: 'Cycle Sports', types: ['ride'] },
+];
+
 export const CATEGORY_LOOKS: Record<ActivityType, CategoryLook> = {
   run: { icon: 'run', color: '#C8F31D', tagline: 'Pace, km splits and PRs' },
   ride: { icon: 'bike', color: '#38BDF8', tagline: 'Live speed and top speed' },

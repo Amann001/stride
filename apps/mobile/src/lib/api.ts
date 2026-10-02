@@ -1,8 +1,11 @@
 import type {
   ActivityDetail,
   ActivitySummary,
+  ActivityType,
   AuthResponse,
+  ChallengesResponse,
   CreateActivityInput,
+  ManualActivityInput,
   User,
   UserStats,
 } from '@repo/shared';
@@ -47,6 +50,9 @@ async function request<T>(path: string, options: { method?: string; body?: unkno
   return data as T;
 }
 
+// Sent with anything week- or month-based, so "this week" starts on your Monday, not the server's.
+const TZ = `tz=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}`;
+
 export const api = {
   register: (name: string, email: string, password: string) =>
     request<AuthResponse>('/auth/register', { method: 'POST', body: { name, email, password } }),
@@ -58,7 +64,13 @@ export const api = {
   createActivity: (input: CreateActivityInput) =>
     request<ActivitySummary>('/activities', { method: 'POST', body: input }),
   deleteActivity: (id: string) => request<void>(`/activities/${id}`, { method: 'DELETE' }),
-  // Sends the phone's time zone so "this week" starts on your Monday, not the server's.
-  getStats: () =>
-    request<UserStats>(`/stats?tz=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}`),
+  createManualActivity: (input: ManualActivityInput) =>
+    request<ActivitySummary>('/activities/manual', { method: 'POST', body: input }),
+  updateProfile: (name: string) => request<User>('/me', { method: 'PATCH', body: { name } }),
+  getStats: () => request<UserStats>(`/stats?${TZ}`),
+  setWeeklyGoal: (type: ActivityType, targetMeters: number) =>
+    request<void>(`/goals/${type}`, { method: 'PUT', body: { targetMeters } }),
+  getChallenges: () => request<ChallengesResponse>(`/challenges?${TZ}`),
+  joinChallenge: (id: string) => request<void>(`/challenges/${encodeURIComponent(id)}/join?${TZ}`, { method: 'POST' }),
+  leaveChallenge: (id: string) => request<void>(`/challenges/${encodeURIComponent(id)}/join`, { method: 'DELETE' }),
 };

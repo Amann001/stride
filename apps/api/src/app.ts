@@ -6,6 +6,7 @@ import { ZodError } from 'zod';
 import { config } from './config';
 import { activityRoutes } from './routes/activities';
 import { authRoutes } from './routes/auth';
+import { challengeRoutes } from './routes/challenges';
 import { statsRoutes } from './routes/stats';
 
 // Tell TypeScript what we put inside login tokens.
@@ -52,6 +53,7 @@ export async function buildApp() {
   await app.register(authRoutes);
   await app.register(activityRoutes);
   await app.register(statsRoutes);
+  await app.register(challengeRoutes);
 
   return app;
 }

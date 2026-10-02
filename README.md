@@ -62,13 +62,25 @@ Each type has its own features. What each one measures lives in `packages/shared
 | **Hike** | Time, distance, climb, altitude | every 1 km | Elevation profile first, highest point |
 
 Every saved activity is compared with your earlier ones of the same type to award achievements:
-first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most steps. The Home tab
-shows your weekly streak and this week's totals; the You tab shows totals and records per type.
+first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most steps.
+
+## The app's tabs
+
+- **Home:** swipeable streak and this-week cards, your activity feed (with share), and suggested
+  challenges. **+** adds an activity by hand (treadmill, bike computer); the bell lists your achievements.
+- **Maps:** every route you've recorded on one map, colored by sport. Tap a route to open it.
+- **Record:** full-screen map, GPS status, a stats panel that expands to big numbers and splits,
+  a sport picker and voice updates.
+- **Groups:** monthly challenges (e.g. "October 50K Run", "400-Minute Challenge"). Join one and your
+  activities count automatically; finished ones go in your trophy case.
+- **You:** Progress (this week, past 12 weeks chart, streak calendar, weekly goal, best efforts),
+  Activities, and More (statistics, trophy case, settings).
 
 ## Roadmap
 
 - [x] **Phase 1:** accounts, GPS recording, activity list and maps (mobile + web)
 - [x] **Phase 1.5:** per-type features, achievements, weekly streak, personal records
-- [ ] **Phase 2:** follow people, feed, kudos, comments
+- [x] **Phase 1.6:** Strava-style tabs (Home, Maps, Record, Groups, You), challenges, goals, manual activities
+- [ ] **Phase 2:** follow people, search, kudos, comments, messages, clubs and events
 - [ ] **Phase 3:** charts over time, goals
 - [ ] **Phase 4:** segments and leaderboards (PostGIS), challenges, clubs
