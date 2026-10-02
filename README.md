@@ -90,6 +90,33 @@ first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most 
 
 To try Friends you need a second account: register one on the website or another phone.
 
+## Live in the cloud (no laptop needed)
+
+| Part | Where it runs |
+|---|---|
+| Database | Neon (Singapore) |
+| Backend API | Render, `https://stride-api-sa5e.onrender.com` (free plan, Singapore). Redeploys on every push to `main` and runs new migrations automatically. Config: [`render.yaml`](render.yaml) |
+| iPhone app | Expo's cloud (EAS Update, channel `production`), opened in Expo Go |
+
+**Open the app anywhere** (Wi-Fi or mobile data, laptop off): in Expo Go, signed in as the
+project owner, open
+`exp://u.expo.dev/4e419f43-5433-41ca-be3d-8ac8867a9622?runtime-version=exposdk%3A57.0.0&channel-name=production`.
+Expo Go then keeps Stride in its recently opened list.
+
+**Publish app changes** (after committing them):
+```bash
+npm run publish:app
+```
+The published app gets the API address from the `EXPO_PUBLIC_API_URL` variable in the EAS
+`production` environment (not from `.env.production`, which only local `expo export` uses).
+
+Good to know:
+- Render's free plan sleeps after 15 minutes without use, so the first request after a break
+  can take up to a minute.
+- `ios.runtimeVersion` is `exposdk:57.0.0` so Expo Go can load the update. When Expo Go moves to a
+  new SDK, upgrade the project (`npx expo install expo@latest --fix`) and update this value.
+  For a TestFlight/App Store build, switch it to `{ "policy": "appVersion" }`.
+
 ## Running on your phone quickly
 
 `npm run dev:mobile` runs in development mode (live reload, slower). For a quick, smooth
