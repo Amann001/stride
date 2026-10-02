@@ -11,12 +11,13 @@ import * as Location from 'expo-location';
 import { router, Stack } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Switch, Text, View } from 'react-native';
-import MapView, { Marker, Polyline, type MapPressEvent } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { CreateRouteMap, type CreateRouteMapHandle } from '@/components/create-route-map';
 import { SportSheet } from '@/components/sport-sheet';
+import { promptText } from '@/components/text-prompt';
 import { CATEGORY_LOOKS } from '@/constants/categories';
-import { INK, LIME, useColors } from '@/constants/theme';
+import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 import { useMapPrefs } from '@/lib/map-prefs';
 import { rememberRoutes } from '@/lib/route-store';
@@ -27,7 +28,7 @@ export default function CreateRouteScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const prefs = useMapPrefs();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<CreateRouteMapHandle>(null);
   const [sport, setSport] = useState<ActivityType>('run');
   const [points, setPoints] = useState<LatLng[]>([]);
   const [line, setLine] = useState<LatLng[]>([]);
@@ -45,10 +46,7 @@ export default function CreateRouteScreen() {
       const { granted } = await Location.requestForegroundPermissionsAsync();
       if (!granted) return;
       const pos = (await Location.getLastKnownPositionAsync()) ?? (await Location.getCurrentPositionAsync());
-      mapRef.current?.animateToRegion(
-        { latitude: pos.coords.latitude, longitude: pos.coords.longitude, latitudeDelta: 0.015, longitudeDelta: 0.015 },
-        400,
-      );
+      mapRef.current?.goTo({ lat: pos.coords.latitude, lng: pos.coords.longitude }, 0.015);
     })();
   }, []);
 
@@ -79,47 +77,37 @@ export default function CreateRouteScreen() {
   const shownLine = points.length < 2 ? [] : line;
   const shownDistance = points.length < 2 ? 0 : distance;
 
-  const addPoint = (e: MapPressEvent) => {
-    const c = e.nativeEvent.coordinate;
+  const addPoint = (c: LatLng) => {
     if (points.length >= 25) {
       Alert.alert('That’s a lot of points', 'A route can have up to 25 points.');
       return;
     }
-    setPoints((p) => [...p, { lat: c.latitude, lng: c.longitude }]);
+    setPoints((p) => [...p, c]);
   };
 
-  const save = () =>
-    Alert.prompt('Name your route', undefined, async (name) => {
-      if (!name?.trim()) return;
-      setSaving(true);
-      try {
-        const polyline = (await api.planRoute({ sport, waypoints: points, snap })).polyline;
-        const saved = await api.saveRoute({ name: name.trim(), sport, polyline });
-        rememberRoutes([saved]);
-        router.replace({ pathname: '/route/[id]', params: { id: saved.id } });
-      } catch (err) {
-        Alert.alert('Could not save', err instanceof Error ? err.message : 'Please try again.');
-      } finally {
-        setSaving(false);
-      }
-    }, 'plain-text', defaultActivityTitle(sport, new Date()).replace(ACTIVITY_LABELS[sport], `${ACTIVITY_LABELS[sport]} Route`));
-
-  const toLatLng = (p: LatLng) => ({ latitude: p.lat, longitude: p.lng });
+  const save = async () => {
+    const name = await promptText({
+      title: 'Name your route',
+      defaultValue: defaultActivityTitle(sport, new Date()).replace(ACTIVITY_LABELS[sport], `${ACTIVITY_LABELS[sport]} Route`),
+    });
+    if (!name?.trim()) return;
+    setSaving(true);
+    try {
+      const polyline = (await api.planRoute({ sport, waypoints: points, snap })).polyline;
+      const saved = await api.saveRoute({ name: name.trim(), sport, polyline });
+      rememberRoutes([saved]);
+      router.replace({ pathname: '/route/[id]', params: { id: saved.id } });
+    } catch (err) {
+      Alert.alert('Could not save', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <View style={styles.screen}>
       <Stack.Screen options={{ title: 'Create Route' }} />
-      <MapView ref={mapRef} style={StyleSheet.absoluteFill} mapType={prefs.mapStyle} showsUserLocation onPress={addPoint}>
-        {shownLine.length > 1 && <Polyline coordinates={shownLine.map(toLatLng)} strokeColor={INK} strokeWidth={8} />}
-        {shownLine.length > 1 && <Polyline coordinates={shownLine.map(toLatLng)} strokeColor={LIME} strokeWidth={5} />}
-        {points.map((p, i) => (
-          <Marker key={`${i}-${p.lat}-${p.lng}`} coordinate={toLatLng(p)} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={[styles.point, { backgroundColor: i === 0 ? '#22C55E' : colors.card, borderColor: INK }]}>
-              <Text style={[styles.pointText, { color: i === 0 ? INK : colors.text }]}>{i + 1}</Text>
-            </View>
-          </Marker>
-        ))}
-      </MapView>
+      <CreateRouteMap ref={mapRef} mapStyle={prefs.mapStyle} points={points} line={shownLine} onAddPoint={addPoint} />
 
       {points.length === 0 && (
         <View style={[styles.hint, { backgroundColor: colors.card }]}>
@@ -176,8 +164,6 @@ function Action({ icon, label, disabled, onPress }: {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   hint: { position: 'absolute', top: 16, alignSelf: 'center', borderRadius: 999, paddingHorizontal: 16, paddingVertical: 10 },
-  point: { width: 24, height: 24, borderRadius: 12, borderWidth: 2, alignItems: 'center', justifyContent: 'center' },
-  pointText: { fontSize: 11, fontWeight: '700' },
   panel: { position: 'absolute', left: 0, right: 0, bottom: 0, borderTopLeftRadius: 20, borderTopRightRadius: 20, padding: 16, gap: 12 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sport: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },
