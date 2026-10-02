@@ -124,6 +124,34 @@ installed apps through `npm run publish:app`.
 - Google plans to require developer verification for apps installed outside the Play Store;
   it starts outside India first (expected in India in 2027).
 
+## Running Stride (owner checklist)
+
+- **Weekly:** `npm run ops` shows open reports and the last week's crashes/errors.
+  Mark a report done with `npm run ops -- reviewed <id>` (or `actioned`).
+- **Backups:** every Sunday, GitHub Actions saves an encrypted copy of the database
+  (`.github/workflows/backup.yml`), kept for 90 days. Make one now: GitHub → Actions →
+  Database backup → Run workflow.
+- **Uptime:** every hour GitHub checks the server (`uptime.yml`) and emails you if it's down.
+- **Security updates:** Dependabot alerts and security fixes are on for this repo; weekly
+  update pull requests come from `.github/dependabot.yml` (Expo/React Native packages are
+  upgraded together with `npx expo install --fix` instead).
+
+### Restoring a backup
+You need `BACKUP_PASSPHRASE` from `apps/api/.env`, GnuPG and Postgres 18's `pg_restore`.
+```bash
+gh run download --repo Amann001/stride --name stride-database-<number>
+gpg --decrypt --output stride.dump stride.dump.gpg
+pg_restore --clean --if-exists --no-owner --dbname "<DATABASE_URL>" stride.dump
+```
+Restoring replaces the current data with the backup's, so try it on a new Neon branch first.
+
+### Password reset emails
+"Forgot password" sends a 6-digit code by email. Until email is set up it says it isn't
+available yet. To turn it on, add these on Render (Environment): `SMTP_HOST`, `SMTP_PORT`
+(587), `SMTP_USER`, `SMTP_PASS` and `MAIL_FROM` (e.g. `Stride <stride.app@example.com>`).
+Use a dedicated address, e.g. Brevo's free plan (smtp-relay.brevo.com) or a new Gmail with an
+app password (smtp.gmail.com).
+
 ## Safety and privacy
 
 - **Privacy zone:** other people never see the first and last 200 m of a route (maps, feed,
@@ -133,7 +161,14 @@ installed apps through `npm run publish:app`.
   table; review them in the Neon console (`SELECT * FROM reports WHERE status = 'open'`).
 - **Delete account:** You → Settings → Delete Account (asks for the password). Erases the
   account and everything linked to it.
-- **Rate limits** on login, sign-up and account deletion.
+- **Rate limits** on login, sign-up, password reset and account deletion (per visitor), and on
+  comments, messages, follows, kudos, reports, clubs and uploads (per account): see
+  `apps/api/src/rate-limits.ts`.
+- **Change password** logs out every other phone (token version, migration 008).
+- **New activities default to Followers.** People can choose Everyone per activity.
+- **Crash reports:** the app reports crashes and shows a "Try again" screen instead of
+  closing; server errors are saved too (`error_reports` table, no personal data).
+- **Logs** never contain the heatmap access key.
 - **Privacy policy and terms:** served by the API at `/privacy` and `/terms`. To show a
   contact address in them, set `CONTACT_EMAIL` on Render (use a dedicated address, not a
   personal one). Update these pages whenever the app starts collecting something new.

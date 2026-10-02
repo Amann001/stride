@@ -1,14 +1,35 @@
-import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
+import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { Animated, AppState, StyleSheet, useColorScheme, View } from 'react-native';
+import { Animated, AppState, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
 import { BrandSplash } from '@/components/brand-splash';
 import { TextPromptHost } from '@/components/text-prompt';
+import { useColors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { installErrorReporting, reportError } from '@/lib/error-reporting';
 import { uploadPending } from '@/lib/pending-activities';
 
 SplashScreen.preventAutoHideAsync();
+installErrorReporting();
+
+// Shown instead of a crash if a screen breaks: the error is reported, and "Try again"
+// reloads the screen.
+export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
+  const colors = useColors();
+  useEffect(() => reportError(error, { fatal: false, screen: 'error-boundary' }), [error]);
+  return (
+    <View style={[styles.crash, { backgroundColor: colors.background }]}>
+      <Text style={[styles.crashTitle, { color: colors.text }]}>Something went wrong</Text>
+      <Text style={{ color: colors.textSecondary, textAlign: 'center', lineHeight: 21 }}>
+        Sorry about that. We’ve been told about the problem. Your activities are safe.
+      </Text>
+      <Pressable onPress={retry} style={[styles.crashButton, { backgroundColor: colors.brand }]}>
+        <Text style={{ color: colors.onBrand, fontWeight: '700' }}>Try again</Text>
+      </Pressable>
+    </View>
+  );
+}
 
 // How long the STRIDE opening screen stays up at minimum, and how long it takes to fade away.
 // Short, like Strava's: just long enough to register the brand.
@@ -75,9 +96,11 @@ function RootNavigator() {
             <Stack.Screen name="edit-profile" options={{ title: 'Edit Profile', presentation: 'modal' }} />
             <Stack.Screen name="blocked" options={{ title: 'Blocked People', headerBackTitle: 'Back' }} />
             <Stack.Screen name="delete-account" options={{ title: 'Delete Account', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="change-password" options={{ title: 'Change Password', headerBackTitle: 'Back' }} />
           </Stack.Protected>
           <Stack.Protected guard={!user}>
             <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="forgot-password" options={{ title: 'Reset Password', headerBackTitle: 'Back' }} />
           </Stack.Protected>
         </Stack>
       )}
@@ -105,4 +128,7 @@ export default function RootLayout() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  crash: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 },
+  crashTitle: { fontSize: 20, fontWeight: '700' },
+  crashButton: { borderRadius: 999, paddingVertical: 13, paddingHorizontal: 28, marginTop: 6 },
 });

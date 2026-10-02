@@ -18,6 +18,10 @@ interface AuthState {
   signUp: (name: string, email: string, password: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (input: { name: string; bio?: string; location?: string }) => Promise<void>;
+  // Logs out every other phone; this one stays signed in with a fresh login.
+  changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  // "Forgot password": the emailed code plus a new password signs you in.
+  resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -85,6 +89,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signUp: async (name, email, password) => finishLogin(await api.register(name, email, password)),
       signOut: forgetLogin,
       updateProfile: async (input) => keepUser(await api.updateProfile(input)),
+      changePassword: async (current, next) => finishLogin(await api.changePassword(current, next)),
+      resetPassword: async (email, code, next) => finishLogin(await api.resetPassword(email, code, next)),
     }),
     [user, loading, finishLogin, forgetLogin, keepUser],
   );

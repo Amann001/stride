@@ -44,6 +44,7 @@ export const errorReportSchema = z.object({
     })
     .optional(),
 });
+export type ErrorReportInput = z.infer<typeof errorReportSchema>;
 
 export const loginSchema = z.object({
   email: z.email().transform((e) => e.toLowerCase()),
