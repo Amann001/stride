@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { noBlockBetween } from '../activity-sql';
 import { pool } from '../db';
+import { LIMITS } from '../rate-limits';
 
 // Private one-to-one messages. You can start a chat with someone if either of you follows
 // the other, which keeps strangers from messaging you out of the blue.
@@ -72,7 +73,7 @@ export async function messageRoutes(app: FastifyInstance) {
   app.get('/conversations', async (req) => (await listConversations(req.user.sub)).filter((c) => c.lastMessage));
 
   // Open a chat with someone: reuses the existing one if there is one.
-  app.post('/conversations', async (req, reply) => {
+  app.post('/conversations', { config: { rateLimit: LIMITS.newConversation } }, async (req, reply) => {
     const { athleteId } = startConversationSchema.parse(req.body);
     const me = req.user.sub;
     if (athleteId === me) return reply.code(400).send({ error: "You can't message yourself" });
@@ -133,7 +134,7 @@ export async function messageRoutes(app: FastifyInstance) {
     return rows.map(toMessage);
   });
 
-  app.post('/conversations/:id/messages', async (req, reply) => {
+  app.post('/conversations/:id/messages', { config: { rateLimit: LIMITS.message } }, async (req, reply) => {
     const { id } = idParams.parse(req.params);
     const { body } = messageSchema.parse(req.body);
     if (!(await isMember(id, req.user.sub))) return reply.code(404).send({ error: 'Conversation not found' });

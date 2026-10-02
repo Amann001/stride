@@ -17,6 +17,7 @@ import { z } from 'zod';
 import { findActivity, findByClientId, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { analyseActivity, earlierActivities } from '../analysis';
 import { pool } from '../db';
+import { LIMITS } from '../rate-limits';
 
 const idParams = z.object({ id: z.uuid() });
 
@@ -38,7 +39,7 @@ export async function activityRoutes(app: FastifyInstance) {
 
   // Save a recorded activity. The server works out the stats itself
   // from the GPS points instead of trusting numbers sent by the phone.
-  app.post('/activities', async (req, reply) => {
+  app.post('/activities', { config: { rateLimit: LIMITS.activity } }, async (req, reply) => {
     const input = createActivitySchema.parse(req.body);
     // Already saved this exact recording (a retried upload)? Return it instead of a duplicate.
     const existingId = input.clientId ? await findByClientId(req.user.sub, input.clientId) : null;
@@ -93,7 +94,7 @@ export async function activityRoutes(app: FastifyInstance) {
   // Save an activity typed in by hand (e.g. a treadmill run or a ride without the phone).
   // There's no GPS track, so no map, splits or best efforts, but it counts for totals,
   // streaks, challenges, and the longest/biggest-climb achievements.
-  app.post('/activities/manual', async (req, reply) => {
+  app.post('/activities/manual', { config: { rateLimit: LIMITS.activity } }, async (req, reply) => {
     const input = manualActivitySchema.parse(req.body);
     const startedAt = new Date(input.startedAt);
     const previous = await earlierActivities(pool, req.user.sub, input.type, startedAt);

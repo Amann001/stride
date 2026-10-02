@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { canSee, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { pool } from '../db';
+import { LIMITS } from '../rate-limits';
 
 // Clubs: groups of athletes around a sport and place, with a weekly leaderboard.
 
@@ -69,7 +70,7 @@ export async function clubRoutes(app: FastifyInstance) {
     return rows.map(toClub);
   });
 
-  app.post('/clubs', async (req, reply) => {
+  app.post('/clubs', { config: { rateLimit: LIMITS.newClub } }, async (req, reply) => {
     const input = createClubSchema.parse(req.body);
     const { rows } = await pool.query<{ id: string }>(
       `WITH c AS (
@@ -119,7 +120,7 @@ export async function clubRoutes(app: FastifyInstance) {
     return detail;
   });
 
-  app.post('/clubs/:id/join', async (req, reply) => {
+  app.post('/clubs/:id/join', { config: { rateLimit: LIMITS.follow } }, async (req, reply) => {
     const { id } = idParams.parse(req.params);
     if (!(await findClub(id, req.user.sub))) return reply.code(404).send({ error: 'Club not found' });
     await pool.query('INSERT INTO club_members (club_id, user_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [id, req.user.sub]);

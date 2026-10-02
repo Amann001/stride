@@ -18,6 +18,7 @@ import { z } from 'zod';
 
 import { canSee, findActivity, noBlockBetween, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { pool } from '../db';
+import { LIMITS } from '../rate-limits';
 
 const idParams = z.object({ id: z.uuid() });
 const PAGE = 30;
@@ -192,7 +193,7 @@ export async function socialRoutes(app: FastifyInstance) {
 
   // ---------- Following ----------
 
-  app.post('/athletes/:id/follow', async (req, reply) => {
+  app.post('/athletes/:id/follow', { config: { rateLimit: LIMITS.follow } }, async (req, reply) => {
     const { id } = idParams.parse(req.params);
     if (id === req.user.sub) return reply.code(400).send({ error: "You can't follow yourself" });
     const exists = await pool.query(`SELECT 1 FROM users WHERE id = $1 AND ${noBlockBetween('$1', '$2')}`, [id, req.user.sub]);
@@ -213,7 +214,7 @@ export async function socialRoutes(app: FastifyInstance) {
   });
 
   // "Follow All" on the suggestions list.
-  app.post('/athletes/follow-all', async (req, reply) => {
+  app.post('/athletes/follow-all', { config: { rateLimit: LIMITS.followAll } }, async (req, reply) => {
     const { ids } = followAllSchema.parse(req.body);
     const { rows } = await pool.query<{ followee_id: string }>(
       `INSERT INTO follows (follower_id, followee_id)
@@ -227,7 +228,7 @@ export async function socialRoutes(app: FastifyInstance) {
 
   // ---------- Kudos ----------
 
-  app.post('/activities/:id/kudos', async (req, reply) => {
+  app.post('/activities/:id/kudos', { config: { rateLimit: LIMITS.kudos } }, async (req, reply) => {
     const { id } = idParams.parse(req.params);
     const activity = await findActivity(id, req.user.sub);
     if (!activity) return reply.code(404).send({ error: 'Activity not found' });
@@ -282,7 +283,7 @@ export async function socialRoutes(app: FastifyInstance) {
     return rows.map(toComment);
   });
 
-  app.post('/activities/:id/comments', async (req, reply) => {
+  app.post('/activities/:id/comments', { config: { rateLimit: LIMITS.comment } }, async (req, reply) => {
     const { id } = idParams.parse(req.params);
     const { body } = commentSchema.parse(req.body);
     const activity = await findActivity(id, req.user.sub);
@@ -359,7 +360,7 @@ export async function socialRoutes(app: FastifyInstance) {
 
   // Block someone: you stop following each other, and neither of you can see, follow,
   // message or comment on the other. They are not told.
-  app.post('/athletes/:id/block', async (req, reply) => {
+  app.post('/athletes/:id/block', { config: { rateLimit: LIMITS.follow } }, async (req, reply) => {
     const { id } = idParams.parse(req.params);
     const me = req.user.sub;
     if (id === me) return reply.code(400).send({ error: "You can't block yourself" });
@@ -390,7 +391,7 @@ export async function socialRoutes(app: FastifyInstance) {
   });
 
   // Report a person, activity, comment or message. Saved for the app owner to review.
-  app.post('/reports', async (req, reply) => {
+  app.post('/reports', { config: { rateLimit: LIMITS.report } }, async (req, reply) => {
     const input = reportSchema.parse(req.body);
     if (input.targetUserId === req.user.sub) return reply.code(400).send({ error: "You can't report yourself" });
     await pool.query(
