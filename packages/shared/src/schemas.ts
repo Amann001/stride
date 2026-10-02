@@ -34,6 +34,18 @@ export const createActivitySchema = z.object({
   steps: z.number().int().min(0).max(1_000_000).optional(),
 });
 
+// Who can see an activity. Only "everyone" activities go into the shared heatmaps.
+export const VISIBILITIES = ['everyone', 'followers', 'only_me'] as const;
+export const visibilitySchema = z.enum(VISIBILITIES);
+
+export const updateActivitySchema = z.object({
+  title: z.string().trim().min(1, 'Give it a title').max(120).optional(),
+  description: z.string().trim().max(2000).nullable().optional(),
+  visibility: visibilitySchema.optional(),
+});
+
+export type Visibility = z.infer<typeof visibilitySchema>;
+export type UpdateActivityInput = z.infer<typeof updateActivitySchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type TrackPoint = z.infer<typeof trackPointSchema>;
