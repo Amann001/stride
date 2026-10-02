@@ -10,6 +10,7 @@ import {
   formatPaceOrSpeed,
   type ActivitySummary,
   type ActivityType,
+  type AthleteProfile,
   type Challenge,
   type PersonalRecord,
   type Totals,
@@ -21,6 +22,7 @@ import { Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, 
 
 import { MEDAL_COLORS } from '@/components/achievements';
 import { ActivityCard } from '@/components/activity-card';
+import { Avatar } from '@/components/avatar';
 import { ChallengeBadge } from '@/components/challenge-card';
 import { StreakCalendar } from '@/components/streak-calendar';
 import { HeaderButton, TabHeader } from '@/components/tab-header';
@@ -37,7 +39,8 @@ type Section = 'progress' | 'activities' | 'more';
 // trophy case, settings).
 export default function ProfileScreen() {
   const colors = useColors();
-  const { user, signOut, updateName } = useAuth();
+  const { user, signOut } = useAuth();
+  const [me, setMe] = useState<AthleteProfile | null>(null);
   const [stats, setStats] = useState<UserStats | null>(null);
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [trophies, setTrophies] = useState<Challenge[]>([]);
@@ -46,13 +49,14 @@ export default function ProfileScreen() {
   const [refreshing, setRefreshing] = useState(false);
 
   const load = useCallback(async () => {
-    const [s, list, c] = await Promise.all([api.getStats(), api.listActivities(), api.getChallenges()]).catch(
-      () => [null, null, null] as const,
-    );
+    const [s, list, c, profile] = await Promise.all([
+      api.getStats(), api.listActivities(), api.getChallenges(), user ? api.athlete(user.id) : Promise.resolve(null),
+    ]).catch(() => [null, null, null, null] as const);
+    if (profile) setMe(profile);
     if (s) setStats(s);
     if (list) setActivities(list);
     if (c) setTrophies(c.completed);
-  }, []);
+  }, [user]);
 
   useFocusEffect(
     useCallback(() => {
@@ -60,15 +64,7 @@ export default function ProfileScreen() {
     }, [load]),
   );
 
-  const editProfile = () =>
-    Alert.prompt('Edit profile', 'Your name, as other athletes will see it.', async (name) => {
-      if (!name?.trim()) return;
-      try {
-        await updateName(name.trim());
-      } catch (err) {
-        Alert.alert('Could not save', err instanceof Error ? err.message : 'Please try again.');
-      }
-    }, 'plain-text', user?.name);
+  const editProfile = () => router.push('/edit-profile');
 
   const shareProfile = () => {
     const year = ACTIVITY_TYPES.reduce((n, t) => n + (stats?.byType[t].thisYear.distanceMeters ?? 0), 0);
@@ -92,15 +88,30 @@ export default function ProfileScreen() {
           setRefreshing(false);
         }} />}>
         <View style={styles.profileRow}>
-          <View style={[styles.avatar, { backgroundColor: colors.brand }]}>
-            <Text style={[styles.avatarText, { color: colors.onBrand }]}>{user?.name.charAt(0).toUpperCase()}</Text>
-          </View>
+          {user && <Avatar id={user.id} name={user.name} size={72} />}
           <View style={styles.profileText}>
             <Text style={[styles.name, { color: colors.text }]}>{user?.name}</Text>
             <Text style={{ color: colors.textSecondary }}>
               {allActivitiesCount} {allActivitiesCount === 1 ? 'activity' : 'activities'}
+              {user?.location ? ` · ${user.location}` : ''}
             </Text>
           </View>
+        </View>
+        {!!user?.bio && <Text style={{ color: colors.text, fontSize: 15 }}>{user.bio}</Text>}
+        <View style={styles.follows}>
+          {([['followers', me?.followerCount ?? 0], ['following', me?.followingCount ?? 0]] as const).map(([list, n]) => (
+            <Pressable key={list} hitSlop={6}
+              onPress={() => user && router.push({ pathname: '/connections', params: { athleteId: user.id, list, name: user.name } })}>
+              <Text style={{ color: colors.text }}>
+                <Text style={{ fontWeight: '800' }}>{n}</Text>{' '}
+                <Text style={{ color: colors.textSecondary }}>{list === 'followers' ? (n === 1 ? 'follower' : 'followers') : 'following'}</Text>
+              </Text>
+            </Pressable>
+          ))}
+          <Pressable onPress={() => router.push('/search')} hitSlop={6} style={styles.findFriends}>
+            <MaterialCommunityIcons name="account-plus-outline" size={16} color={colors.accent} />
+            <Text style={{ color: colors.accent, fontWeight: '700' }}>Find friends</Text>
+          </Pressable>
         </View>
         <View style={styles.profileButtons}>
           <OutlineButton label="Edit profile" onPress={editProfile} />
@@ -398,6 +409,8 @@ const styles = StyleSheet.create({
   profileText: { flex: 1 },
   name: { fontSize: 22, fontWeight: '800' },
   profileButtons: { flexDirection: 'row', gap: 10 },
+  follows: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  findFriends: { flexDirection: 'row', alignItems: 'center', gap: 4, marginLeft: 'auto' },
   outline: { flex: 1, borderWidth: 1, borderRadius: 999, paddingVertical: 9, alignItems: 'center' },
   segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
   segment: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: 'transparent' },

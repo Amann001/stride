@@ -1,19 +1,23 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { ACTIVITY_LABELS, ACTIVITY_TYPES, type ActivityType, type Challenge } from '@repo/shared';
-import { useFocusEffect } from 'expo-router';
+import { ACTIVITY_LABELS, ACTIVITY_TYPES, type ActivityType, type Challenge, type Club } from '@repo/shared';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useState } from 'react';
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ChallengeCard } from '@/components/challenge-card';
-import { TabHeader } from '@/components/tab-header';
+import { ClubRow } from '@/components/club-row';
+import { HeaderButton, TabHeader } from '@/components/tab-header';
 import { CATEGORY_LOOKS } from '@/constants/categories';
 import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 
-// Groups tab: this month's challenges. Filter by sport, join one, and watch your progress
-// fill up as you record. (Clubs and events arrive with following friends in the next phase.)
+// Groups tab, like Strava's: Challenges (this month's, filter by sport, join and watch your
+// progress fill up) and Clubs (yours, and popular ones to join).
 export default function GroupsScreen() {
   const colors = useColors();
+  const [section, setSection] = useState<'challenges' | 'clubs'>('challenges');
+  const [myClubs, setMyClubs] = useState<Club[]>([]);
+  const [popular, setPopular] = useState<Club[]>([]);
   const [challenges, setChallenges] = useState<Challenge[] | null>(null);
   const [filter, setFilter] = useState<ActivityType | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
@@ -22,7 +26,10 @@ export default function GroupsScreen() {
   const load = useCallback(async () => {
     try {
       setError(null);
-      setChallenges((await api.getChallenges()).current);
+      const [c, mine, all] = await Promise.all([api.getChallenges(), api.myClubs(), api.clubs()]);
+      setChallenges(c.current);
+      setMyClubs(mine);
+      setPopular(all.filter((x) => !x.isMember));
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Could not load challenges');
     }
@@ -41,7 +48,45 @@ export default function GroupsScreen() {
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <TabHeader title="Challenges" />
+      <TabHeader
+        left={<HeaderButton icon="magnify" label="Search clubs" onPress={() => router.push({ pathname: '/search', params: { tab: 'clubs' } })} />}
+        title="Groups"
+        right={<HeaderButton icon="chat-outline" label="Messages" onPress={() => router.push('/messages')} />}
+      />
+      <View style={[styles.segments, { borderColor: colors.border }]}>
+        {(['challenges', 'clubs'] as const).map((key) => (
+          <Pressable key={key} onPress={() => setSection(key)} style={[styles.segment, section === key && { borderBottomColor: colors.accent }]}>
+            <Text style={{ color: section === key ? colors.text : colors.textSecondary, fontWeight: '700', fontSize: 16 }}>
+              {key === 'challenges' ? 'Challenges' : 'Clubs'}
+            </Text>
+          </Pressable>
+        ))}
+      </View>
+      {section === 'clubs' ? (
+        <ScrollView contentContainerStyle={styles.content}>
+          <Pressable style={[styles.createClub, { backgroundColor: colors.card }]} onPress={() => router.push('/clubs/new')}>
+            <MaterialCommunityIcons name="account-group" size={32} color={colors.accent} />
+            <View style={styles.createText}>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Create Your Own Club</Text>
+              <Text style={{ color: colors.textSecondary }}>Give your community a motivating home base on Stride.</Text>
+            </View>
+          </Pressable>
+          {myClubs.length > 0 && (
+            <View>
+              <Text style={[styles.sectionTitle, { color: colors.text }]}>Your Clubs</Text>
+              {myClubs.map((c) => <ClubRow key={c.id} club={c} />)}
+            </View>
+          )}
+          <View>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Popular Clubs</Text>
+            {popular.length ? popular.map((c) => <ClubRow key={c.id} club={c} />) : (
+              <Text style={{ color: colors.textSecondary, marginTop: 6 }}>
+                {myClubs.length ? "You've joined every club so far." : 'No clubs yet. Create the first one!'}
+              </Text>
+            )}
+          </View>
+        </ScrollView>
+      ) : (
       <ScrollView
         contentContainerStyle={styles.content}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={async () => {
@@ -75,6 +120,7 @@ export default function GroupsScreen() {
           </View>
         )}
       </ScrollView>
+      )}
     </View>
   );
 }
@@ -101,4 +147,8 @@ const styles = StyleSheet.create({
   message: { textAlign: 'center', marginTop: 24 },
   section: { gap: 12 },
   sectionTitle: { fontSize: 20, fontWeight: '800' },
+  segments: { flexDirection: 'row', borderBottomWidth: StyleSheet.hairlineWidth },
+  segment: { flex: 1, alignItems: 'center', paddingVertical: 11, borderBottomWidth: 2, borderBottomColor: 'transparent' },
+  createClub: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 16 },
+  createText: { flex: 1, gap: 4 },
 });

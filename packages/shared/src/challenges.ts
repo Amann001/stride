@@ -111,6 +111,9 @@ export const manualActivitySchema = z.object({
 
 export const updateProfileSchema = z.object({
   name: z.string().trim().min(1, 'Name is required').max(80),
+  // Empty text clears these.
+  bio: z.string().trim().max(300).optional(),
+  location: z.string().trim().max(80).optional(),
 });
 
 export type WeeklyGoalInput = z.infer<typeof weeklyGoalSchema>;

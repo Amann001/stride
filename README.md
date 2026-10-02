@@ -76,11 +76,39 @@ first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most 
 - **You:** Progress (this week, past 12 weeks chart, streak calendar, weekly goal, best efforts),
   Activities, and More (statistics, trophy case, settings).
 
+## Friends
+
+- **Find people:** search by name, "Who to Follow" suggestions (people who follow you, friends
+  of friends, active athletes), your QR code and a scanner, and invites by text or share sheet.
+- **Follow** people to see their activities in your Home feed. Give **kudos**, **comment**, and
+  open their profile (followers, following, activities).
+- **Messages:** private one-to-one chats with anyone you follow or who follows you.
+- **Notifications:** new followers, kudos and comments, plus your achievements.
+- **Clubs** (Groups tab): create or join a club for a sport, with a weekly distance leaderboard.
+- **Who can view** each activity: Everyone, Followers, or Only You. Private activities never
+  appear in feeds, clubs or shared heatmaps.
+
+To try Friends you need a second account: register one on the website or another phone.
+
+## Running on your phone quickly
+
+`npm run dev:mobile` runs in development mode (live reload, slower). For a quick, smooth
+preview, run the app in production mode instead:
+
+```bash
+cd apps/mobile && npx expo start --no-dev --minify
+```
+
+In Expo Go, the first screen (app icon and name) is Expo Go's own loading screen and can't be
+changed. A real build (`eas build`) shows Stride's STRIDE splash from the very first frame.
+
 ## Roadmap
 
 - [x] **Phase 1:** accounts, GPS recording, activity list and maps (mobile + web)
 - [x] **Phase 1.5:** per-type features, achievements, weekly streak, personal records
 - [x] **Phase 1.6:** Strava-style tabs (Home, Maps, Record, Groups, You), challenges, goals, manual activities
-- [ ] **Phase 2:** follow people, search, kudos, comments, messages, clubs and events
+- [x] **Phase 1.7:** Maps (route suggestions, heatmaps, map types, create and saved routes)
+- [x] **Phase 2:** follow people, search, kudos, comments, messages, notifications, clubs
+- [ ] **Phase 3:** push notifications, photos, segments and leaderboards, club events
 - [ ] **Phase 3:** charts over time, goals
 - [ ] **Phase 4:** segments and leaderboards (PostGIS), challenges, clubs

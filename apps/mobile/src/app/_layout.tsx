@@ -49,6 +49,16 @@ function RootNavigator() {
             <Stack.Screen name="route/[id]" options={{ title: 'Route', headerBackTitle: 'Back' }} />
             <Stack.Screen name="routes/saved" options={{ title: 'Saved Routes', headerBackTitle: 'Back' }} />
             <Stack.Screen name="routes/create" options={{ title: 'Create Route', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="search" options={{ title: 'Search', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="scan" options={{ title: 'Scan QR Code', presentation: 'modal' }} />
+            <Stack.Screen name="athlete/[id]" options={{ title: 'Athlete', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="connections" options={{ title: 'Followers', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="messages/index" options={{ title: 'Messages', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="messages/[id]" options={{ title: 'Chat', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="messages/new" options={{ title: 'New Message', presentation: 'modal' }} />
+            <Stack.Screen name="club/[id]" options={{ title: 'Club', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="clubs/new" options={{ title: 'Create a Club', presentation: 'modal' }} />
+            <Stack.Screen name="edit-profile" options={{ title: 'Edit Profile', presentation: 'modal' }} />
           </Stack.Protected>
           <Stack.Protected guard={!user}>
             <Stack.Screen name="login" options={{ headerShown: false }} />

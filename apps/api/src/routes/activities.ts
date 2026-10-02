@@ -5,66 +5,17 @@ import {
   createActivitySchema,
   encodePolyline,
   manualActivitySchema,
-  type Achievement,
+  updateActivitySchema,
   type ActivityDetail,
   type ActivitySummary,
-  type ActivityType,
-  type BestEffort,
   type TrackPoint,
-  type Visibility,
-  updateActivitySchema,
 } from '@repo/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { findActivity, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { analyseActivity, earlierActivities } from '../analysis';
 import { pool } from '../db';
-
-interface ActivityRow {
-  id: string;
-  user_id: string;
-  type: ActivityType;
-  title: string;
-  description: string | null;
-  started_at: Date;
-  elapsed_seconds: number;
-  moving_seconds: number;
-  distance_meters: number;
-  elevation_gain_meters: number;
-  max_speed_mps: number;
-  steps: number | null;
-  best_efforts: BestEffort[] | null;
-  achievements: Achievement[];
-  visibility: Visibility;
-  polyline: string;
-  points?: TrackPoint[];
-  created_at: Date;
-}
-
-const SUMMARY_COLUMNS = `id, user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
-  distance_meters, elevation_gain_meters, max_speed_mps, steps, best_efforts, achievements, visibility, polyline, created_at`;
-
-function toSummary(row: ActivityRow): ActivitySummary {
-  return {
-    id: row.id,
-    userId: row.user_id,
-    type: row.type,
-    title: row.title,
-    description: row.description,
-    startedAt: row.started_at.toISOString(),
-    elapsedSeconds: row.elapsed_seconds,
-    movingSeconds: row.moving_seconds,
-    distanceMeters: row.distance_meters,
-    elevationGainMeters: row.elevation_gain_meters,
-    maxSpeedMps: row.max_speed_mps,
-    steps: row.steps,
-    bestEfforts: row.best_efforts ?? [],
-    achievements: row.achievements,
-    visibility: row.visibility,
-    polyline: row.polyline,
-    createdAt: row.created_at.toISOString(),
-  };
-}
 
 const idParams = z.object({ id: z.uuid() });
 
@@ -102,12 +53,12 @@ export async function activityRoutes(app: FastifyInstance) {
       points,
       steps,
     );
-    const { rows } = await pool.query<ActivityRow>(
+    const { rows } = await pool.query<{ id: string }>(
       `INSERT INTO activities (user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
          distance_meters, elevation_gain_meters, polyline, points, steps, max_speed_mps, best_efforts, achievements,
          min_lat, max_lat, min_lng, max_lng)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
-       RETURNING ${SUMMARY_COLUMNS}`,
+       RETURNING id`,
       [
         req.user.sub,
         input.type,
@@ -128,7 +79,7 @@ export async function activityRoutes(app: FastifyInstance) {
         ...boundingBox(points),
       ],
     );
-    return reply.code(201).send(toSummary(rows[0]));
+    return reply.code(201).send(toSummary((await findActivity(rows[0].id, req.user.sub))!));
   });
 
   // Save an activity typed in by hand (e.g. a treadmill run or a ride without the phone).
@@ -143,11 +94,11 @@ export async function activityRoutes(app: FastifyInstance) {
       { distanceMeters: input.distanceMeters, elevationGainMeters: input.elevationGainMeters, steps: null, bestEfforts: [] },
       previous,
     );
-    const { rows } = await pool.query<ActivityRow>(
+    const { rows } = await pool.query<{ id: string }>(
       `INSERT INTO activities (user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
          distance_meters, elevation_gain_meters, polyline, points, max_speed_mps, best_efforts, achievements)
        VALUES ($1, $2, $3, $4, $5, $6, $6, $7, $8, '', '[]', 0, '[]', $9)
-       RETURNING ${SUMMARY_COLUMNS}`,
+       RETURNING id`,
       [
         req.user.sub,
         input.type,
@@ -160,26 +111,25 @@ export async function activityRoutes(app: FastifyInstance) {
         JSON.stringify(achievements),
       ],
     );
-    return reply.code(201).send(toSummary(rows[0]));
+    return reply.code(201).send(toSummary((await findActivity(rows[0].id, req.user.sub))!));
   });
 
   // Your own activities, newest first.
   app.get('/activities', async (req): Promise<ActivitySummary[]> => {
     const { rows } = await pool.query<ActivityRow>(
-      `SELECT ${SUMMARY_COLUMNS} FROM activities WHERE user_id = $1 ORDER BY started_at DESC LIMIT 50`,
+      `${selectActivities('$1')} WHERE a.user_id = $1 ORDER BY a.started_at DESC LIMIT 50`,
       [req.user.sub],
     );
     return rows.map(toSummary);
   });
 
+  // Any activity you're allowed to see: yours, public ones, and followers-only ones from
+  // people you follow.
   app.get('/activities/:id', async (req, reply) => {
     const { id } = idParams.parse(req.params);
-    const { rows } = await pool.query<ActivityRow>(
-      `SELECT ${SUMMARY_COLUMNS}, points FROM activities WHERE id = $1 AND user_id = $2`,
-      [id, req.user.sub],
-    );
-    if (!rows[0]) return reply.code(404).send({ error: 'Activity not found' });
-    const detail: ActivityDetail = { ...toSummary(rows[0]), points: rows[0].points ?? [] };
+    const row = await findActivity(id, req.user.sub, true);
+    if (!row) return reply.code(404).send({ error: 'Activity not found' });
+    const detail: ActivityDetail = { ...toSummary(row), points: row.points ?? [] };
     return detail;
   });
 
@@ -187,17 +137,16 @@ export async function activityRoutes(app: FastifyInstance) {
   app.patch('/activities/:id', async (req, reply) => {
     const { id } = idParams.parse(req.params);
     const input = updateActivitySchema.parse(req.body);
-    const { rows } = await pool.query<ActivityRow>(
+    const { rowCount } = await pool.query(
       `UPDATE activities SET
          title = coalesce($3, title),
          description = CASE WHEN $4::boolean THEN $5 ELSE description END,
          visibility = coalesce($6, visibility)
-       WHERE id = $1 AND user_id = $2
-       RETURNING ${SUMMARY_COLUMNS}`,
+       WHERE id = $1 AND user_id = $2`,
       [id, req.user.sub, input.title ?? null, input.description !== undefined, input.description ?? null, input.visibility ?? null],
     );
-    if (!rows[0]) return reply.code(404).send({ error: 'Activity not found' });
-    return toSummary(rows[0]);
+    if (!rowCount) return reply.code(404).send({ error: 'Activity not found' });
+    return toSummary((await findActivity(id, req.user.sub))!);
   });
 
   app.delete('/activities/:id', async (req, reply) => {
