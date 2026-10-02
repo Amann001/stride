@@ -20,9 +20,12 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
-          # Neon runs Postgres 18, so use the matching pg_dump. Verify the server's certificate
-          # with the system's trusted certificates.
-          URL="${DATABASE_URL/sslmode=verify-full/sslmode=verify-full&sslrootcert=system}"
+          # Neon runs Postgres 18, so use the matching pg_dump. sslrootcert=system checks the
+          # server's certificate against the system's trusted certificates (needed for
+          # sslmode=verify-full). Appended, not substituted: in bash 5.2 a "&" in a ${x/a/b}
+          # replacement means "the matched text", which garbles the address.
+          case "$DATABASE_URL" in *\?*) SEP='&' ;; *) SEP='?' ;; esac
+          URL="${DATABASE_URL}${SEP}sslrootcert=system"
           docker run --rm -e URL="$URL" postgres:18 \
             sh -c 'pg_dump --no-owner --no-privileges --format=custom "$URL"' > stride.dump
           SIZE=$(stat -c %s stride.dump)
