@@ -20,13 +20,14 @@ jobs:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
         run: |
           set -euo pipefail
-          # Neon runs Postgres 18, so use the matching pg_dump. sslrootcert=system checks the
-          # server's certificate against the system's trusted certificates (needed for
-          # sslmode=verify-full). Appended, not substituted: in bash 5.2 a "&" in a ${x/a/b}
-          # replacement means "the matched text", which garbles the address.
+          # Neon runs Postgres 18, so use the matching pg_dump. sslmode=verify-full checks the
+          # server's certificate; the postgres image has no list of trusted authorities, so it
+          # borrows the runner's (read-only). Appended, not substituted: in bash 5.2 a "&" in a
+          # ${x/a/b} replacement means "the matched text", which garbles the address.
+          CA=/etc/ssl/certs/ca-certificates.crt
           case "$DATABASE_URL" in *\?*) SEP='&' ;; *) SEP='?' ;; esac
-          URL="${DATABASE_URL}${SEP}sslrootcert=system"
-          docker run --rm -e URL="$URL" postgres:18 \
+          URL="${DATABASE_URL}${SEP}sslrootcert=${CA}"
+          docker run --rm -v "$CA:$CA:ro" -e URL="$URL" postgres:18 \
             sh -c 'pg_dump --no-owner --no-privileges --format=custom "$URL"' > stride.dump
           SIZE=$(stat -c %s stride.dump)
           echo "Backup size: $SIZE bytes"
