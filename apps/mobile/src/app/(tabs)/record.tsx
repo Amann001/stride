@@ -31,6 +31,7 @@ import type { IconName } from '@/constants/categories';
 import { CATEGORY_LOOKS } from '@/constants/categories';
 import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
+import { addPending, isRetryable, newClientId, type PendingActivity } from '@/lib/pending-activities';
 import { useGpsSignal } from '@/lib/use-gps-signal';
 import { setActiveRoute, useActiveRoute } from '@/lib/route-store';
 import { useRecorder } from '@/lib/use-recorder';
@@ -142,19 +143,38 @@ export default function RecordScreen() {
       return;
     }
     setSaving(true);
+    // The clientId means this exact recording can be uploaded again later without duplicates.
+    const activity: PendingActivity = {
+      type,
+      title: defaultActivityTitle(type, new Date(points[0].t)),
+      points,
+      steps: steps ?? undefined,
+      clientId: newClientId(),
+    };
     try {
-      const saved = await api.createActivity({
-        type,
-        title: defaultActivityTitle(type, new Date(points[0].t)),
-        points,
-        steps: steps ?? undefined,
-      });
+      const saved = await api.createActivity(activity);
       rec.discard();
       setExpanded(false);
       const n = saved.achievements.length;
       say(`${ACTIVITY_LABELS[type]} saved.${n ? ` You earned ${n} ${n === 1 ? 'achievement' : 'achievements'}!` : ' Nice work.'}`);
       router.push({ pathname: '/activity/[id]', params: { id: saved.id } });
     } catch (err) {
+      // No signal or a server hiccup: keep the recording on the phone and upload it later.
+      if (isRetryable(err)) {
+        try {
+          await addPending(activity);
+          rec.discard();
+          setExpanded(false);
+          say(`${ACTIVITY_LABELS[type]} saved on your phone.`);
+          Alert.alert(
+            'Saved on your phone',
+            `There's no connection right now, so your ${ACTIVITY_LABELS[type].toLowerCase()} is stored safely on this phone. It will upload by itself as soon as you're back online.`,
+          );
+          return;
+        } catch {
+          // Couldn't even store it on the phone: fall through so the recording isn't discarded.
+        }
+      }
       Alert.alert('Could not save', err instanceof Error ? err.message : 'Please try again.');
     } finally {
       setSaving(false);

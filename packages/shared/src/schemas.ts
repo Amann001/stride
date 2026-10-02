@@ -32,6 +32,9 @@ export const createActivitySchema = z.object({
   points: z.array(trackPointSchema).min(2, 'An activity needs at least 2 GPS points').max(100_000),
   // From the phone's motion sensor, for runs, walks and hikes. Left out if unavailable.
   steps: z.number().int().min(0).max(1_000_000).optional(),
+  // A unique tag made by the phone for this recording. Sending the same tag again returns the
+  // activity saved the first time instead of a duplicate, so uploads are safe to retry.
+  clientId: z.string().min(8).max(64).optional(),
 });
 
 // Who can see an activity. Only "everyone" activities go into the shared heatmaps.

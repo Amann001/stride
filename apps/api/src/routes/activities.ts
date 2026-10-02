@@ -13,7 +13,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { findActivity, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
+import { findActivity, findByClientId, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { analyseActivity, earlierActivities } from '../analysis';
 import { pool } from '../db';
 
@@ -39,6 +39,9 @@ export async function activityRoutes(app: FastifyInstance) {
   // from the GPS points instead of trusting numbers sent by the phone.
   app.post('/activities', async (req, reply) => {
     const input = createActivitySchema.parse(req.body);
+    // Already saved this exact recording (a retried upload)? Return it instead of a duplicate.
+    const existingId = input.clientId ? await findByClientId(req.user.sub, input.clientId) : null;
+    if (existingId) return reply.code(200).send(toSummary((await findActivity(existingId, req.user.sub))!));
     // Sort by time and drop GPS glitches (impossible jumps) before doing any maths.
     const points = cleanTrack(input.points, input.type);
     if (points.length < 2) {
@@ -53,11 +56,13 @@ export async function activityRoutes(app: FastifyInstance) {
       points,
       steps,
     );
+    // ON CONFLICT covers two uploads of the same recording arriving at the same moment.
     const { rows } = await pool.query<{ id: string }>(
       `INSERT INTO activities (user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
          distance_meters, elevation_gain_meters, polyline, points, steps, max_speed_mps, best_efforts, achievements,
-         min_lat, max_lat, min_lng, max_lng)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19)
+         min_lat, max_lat, min_lng, max_lng, client_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+       ON CONFLICT (user_id, client_id) WHERE client_id IS NOT NULL DO NOTHING
        RETURNING id`,
       [
         req.user.sub,
@@ -77,9 +82,11 @@ export async function activityRoutes(app: FastifyInstance) {
         JSON.stringify(achievements),
         // The box around the route, so heatmap tiles can find it quickly.
         ...boundingBox(points),
+        input.clientId ?? null,
       ],
     );
-    return reply.code(201).send(toSummary((await findActivity(rows[0].id, req.user.sub))!));
+    const id = rows[0]?.id ?? (await findByClientId(req.user.sub, input.clientId!));
+    return reply.code(rows[0] ? 201 : 200).send(toSummary((await findActivity(id!, req.user.sub))!));
   });
 
   // Save an activity typed in by hand (e.g. a treadmill run or a ride without the phone).
