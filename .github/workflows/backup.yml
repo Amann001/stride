@@ -1,0 +1,47 @@
+# Weekly encrypted backup of Stride's database (Neon). Keeps the last 90 days of backups as
+# downloadable files on this repo's Actions page. Restore steps: see README → Backups.
+name: Database backup
+
+on:
+  schedule:
+    - cron: '30 20 * * 6' # Sundays 02:00 India time
+  workflow_dispatch: # "Run workflow" button for a backup right now
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Dump the database
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          set -euo pipefail
+          # Neon runs Postgres 18, so use the matching pg_dump. Verify the server's certificate
+          # with the system's trusted certificates.
+          URL="${DATABASE_URL/sslmode=verify-full/sslmode=verify-full&sslrootcert=system}"
+          docker run --rm -e URL="$URL" postgres:18 \
+            sh -c 'pg_dump --no-owner --no-privileges --format=custom "$URL"' > stride.dump
+          SIZE=$(stat -c %s stride.dump)
+          echo "Backup size: $SIZE bytes"
+          if [ "$SIZE" -lt 10000 ]; then echo "::error::Backup looks empty"; exit 1; fi
+
+      - name: Encrypt it
+        env:
+          BACKUP_PASSPHRASE: ${{ secrets.BACKUP_PASSPHRASE }}
+        run: |
+          set -euo pipefail
+          gpg --batch --yes --pinentry-mode loopback --passphrase "$BACKUP_PASSPHRASE" \
+            --symmetric --cipher-algo AES256 --output stride.dump.gpg stride.dump
+          rm stride.dump
+
+      - name: Keep it for 90 days
+        uses: actions/upload-artifact@v4
+        with:
+          name: stride-database-${{ github.run_number }}
+          path: stride.dump.gpg
+          retention-days: 90
+          if-no-files-found: error

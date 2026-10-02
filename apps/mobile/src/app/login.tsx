@@ -1,3 +1,4 @@
+import { router } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import {
@@ -86,6 +87,13 @@ export default function LoginScreen() {
           )}
         </Pressable>
 
+        {mode === 'login' && (
+          <Pressable onPress={() => router.push({ pathname: '/forgot-password', params: { email: email.trim() } })}
+            style={styles.forgot}>
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>Forgot password?</Text>
+          </Pressable>
+        )}
+
         {mode === 'signup' && (
           <Text style={[styles.legal, { color: colors.textSecondary }]}>
             By signing up, you confirm you’re 18 or older and agree to the{' '}
@@ -119,4 +127,5 @@ const styles = StyleSheet.create({
   buttonText: { fontSize: 16, fontWeight: '700' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
   legal: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 14 },
+  forgot: { alignSelf: 'center', marginTop: 14, padding: 4 },
 });

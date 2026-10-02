@@ -23,6 +23,7 @@ import type {
   RouteSummary,
   SaveRouteInput,
   SuggestRoutesInput,
+  ErrorReportInput,
   ReportInput,
   UpdateActivityInput,
   User,
@@ -194,6 +195,12 @@ export const api = {
   blockedAthletes: () => request<AthleteRef[]>('/me/blocked'),
   report: (input: ReportInput) => request<{ ok: true }>('/reports', { method: 'POST', body: input }),
   deleteAccount: (password: string) => request<void>('/me', { method: 'DELETE', body: { password } }),
+  changePassword: (currentPassword: string, newPassword: string) =>
+    request<AuthResponse>('/me/password', { method: 'POST', body: { currentPassword, newPassword } }),
+  forgotPassword: (email: string) => request<{ ok: true }>('/auth/forgot-password', { method: 'POST', body: { email } }),
+  resetPassword: (email: string, code: string, newPassword: string) =>
+    request<AuthResponse>('/auth/reset-password', { method: 'POST', body: { email, code, newPassword } }),
+  reportError: (input: ErrorReportInput) => request<void>('/diagnostics/errors', { method: 'POST', body: input }),
   messages: (conversationId: string, after?: string) =>
     request<Message[]>(`/conversations/${conversationId}/messages${after ? `?after=${encodeURIComponent(after)}` : ''}`),
   sendMessage: (conversationId: string, body: string) =>

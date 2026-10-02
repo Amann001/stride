@@ -1,0 +1,31 @@
+# Checks every hour that Stride's server answers. If it doesn't, this run fails and GitHub
+# emails the repo owner ("Run failed: Uptime check").
+name: Uptime check
+
+on:
+  schedule:
+    - cron: '17 * * * *' # every hour
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    steps:
+      - name: Ask the server if it's up
+        run: |
+          # The free server sleeps when unused and can take up to a minute to wake,
+          # so allow time and a couple of tries before calling it down.
+          for attempt in 1 2 3; do
+            if curl -fsS --max-time 90 https://stride-api-sa5e.onrender.com/health; then
+              echo; echo "Stride is up."
+              exit 0
+            fi
+            echo "No answer (try $attempt), waiting..."
+            sleep 20
+          done
+          echo "::error::Stride's server is not answering at https://stride-api-sa5e.onrender.com/health"
+          exit 1
