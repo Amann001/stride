@@ -50,7 +50,8 @@
         {
           "motionPermission": "We count your steps while you record a run, walk or hike."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true,

@@ -1,12 +1,10 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import {
   ACTIVITY_LABELS,
-  ACTIVITY_TYPES,
   CATEGORIES,
   computeSplits,
   defaultActivityTitle,
   elevationGain,
-  formatDistance,
   formatDuration,
   formatElevation,
   formatPace,
@@ -19,17 +17,22 @@ import {
   type ActivityType,
 } from '@repo/shared';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
-import { router } from 'expo-router';
+import { router, useIsFocused } from 'expo-router';
 import * as Speech from 'expo-speech';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RouteMap } from '@/components/route-map';
-import { Stat } from '@/components/stat';
+import { SportSheet } from '@/components/sport-sheet';
+import type { IconName } from '@/constants/categories';
 import { CATEGORY_LOOKS } from '@/constants/categories';
 import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
+import { useGpsSignal } from '@/lib/use-gps-signal';
 import { useRecorder } from '@/lib/use-recorder';
+
+type Item = { label: string; value: string };
 
 // What the voice says after each split, e.g. every kilometer on a run.
 function splitAnnouncement(type: ActivityType, meters: number, elapsed: number, splitSeconds: number,
@@ -46,14 +49,20 @@ function splitAnnouncement(type: ActivityType, meters: number, elapsed: number, 
   return parts.join(' ');
 }
 
-// Record tab: pick a kind of activity, press Start, and watch the stats that matter
-// for it. A voice reads out your progress at every split.
+// Record tab: a full-screen map with your stats underneath. Pick a sport, wait for
+// "GPS Acquired", press Start. Tap the arrows to switch to big numbers and splits.
+// A voice reads out your progress at every split.
 export default function RecordScreen() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+  const focused = useIsFocused();
   const rec = useRecorder();
   const [type, setType] = useState<ActivityType>('run');
   const [voiceOn, setVoiceOn] = useState(true);
+  const [expanded, setExpanded] = useState(false);
+  const [sportSheetOpen, setSportSheetOpen] = useState(false);
   const [saving, setSaving] = useState(false);
+  const gps = useGpsSignal(focused && rec.status === 'idle');
   const config = CATEGORIES[type];
   const look = CATEGORY_LOOKS[type];
 
@@ -128,6 +137,7 @@ export default function RecordScreen() {
         steps: steps ?? undefined,
       });
       rec.discard();
+      setExpanded(false);
       const n = saved.achievements.length;
       say(`${ACTIVITY_LABELS[type]} saved.${n ? ` You earned ${n} ${n === 1 ? 'achievement' : 'achievements'}!` : ' Nice work.'}`);
       router.push({ pathname: '/activity/[id]', params: { id: saved.id } });
@@ -141,97 +151,151 @@ export default function RecordScreen() {
   const confirmDiscard = () =>
     Alert.alert('Discard activity?', 'This recording will be lost.', [
       { text: 'Cancel', style: 'cancel' },
-      { text: 'Discard', style: 'destructive', onPress: rec.discard },
+      { text: 'Discard', style: 'destructive', onPress: () => { rec.discard(); setExpanded(false); } },
     ]);
 
+  // The numbers for each sport: three in the small panel, more in the big view.
   const time = { label: 'Time', value: formatDuration(rec.elapsed) };
-  const distance = { label: 'Distance', value: formatDistance(rec.distance) };
-  const avg = { label: config.metric === 'speed' ? 'Avg speed' : 'Avg pace', value: formatPaceOrSpeed(type, rec.distance, rec.elapsed) };
-  type Item = { label: string; value: string };
-  const live: { big: Item; rows: Item[][] } = {
-    run: { big: time, rows: [[distance, avg, { label: 'Split pace', value: formatPace(splitPace) }]] },
+  const distance = { label: 'Distance (km)', value: (rec.distance / 1000).toFixed(2) };
+  const avg = {
+    label: config.metric === 'speed' ? 'Avg speed' : 'Avg pace (/km)',
+    value: formatPaceOrSpeed(type, rec.distance, rec.elapsed).replace(' /km', ''),
+  };
+  const steps = { label: 'Steps', value: rec.steps == null ? '--' : formatSteps(rec.steps) };
+  const climbItem = { label: 'Climb', value: formatElevation(climb) };
+  const layout: Record<ActivityType, { panel: Item[]; big: Item[] }> = {
+    run: { panel: [time, avg, distance], big: [avg, distance, { label: 'Split pace (/km)', value: formatPace(splitPace).replace(' /km', '') }] },
     ride: {
-      big: { label: 'Speed', value: formatSpeed(speedNow) },
-      rows: [[time, distance], [avg, { label: 'Max speed', value: formatSpeed(topSpeed) }]],
+      panel: [time, { label: 'Speed', value: formatSpeed(speedNow) }, distance],
+      big: [{ label: 'Speed', value: formatSpeed(speedNow) }, distance, avg, { label: 'Max speed', value: formatSpeed(topSpeed) }],
     },
-    walk: { big: time, rows: [[distance, { label: 'Steps', value: rec.steps == null ? '--' : formatSteps(rec.steps) }, avg]] },
+    walk: { panel: [time, steps, distance], big: [distance, steps, avg] },
     hike: {
-      big: time,
-      rows: [[distance, { label: 'Climb', value: formatElevation(climb) }, { label: 'Altitude', value: altitude == null ? '--' : formatElevation(altitude) }]],
+      panel: [time, climbItem, distance],
+      big: [distance, climbItem, { label: 'Altitude', value: altitude == null ? '--' : formatElevation(altitude) }],
     },
-  }[type];
+  };
+  const { panel, big } = layout[type];
+
+  const status =
+    rec.status === 'recording' ? { text: 'Recording', bg: colors.brand, fg: INK }
+    : rec.status === 'paused' ? { text: 'Paused', bg: '#F59E0B', fg: INK }
+    : gps === 'ready' ? { text: 'GPS Acquired', bg: '#15803D', fg: '#fff' }
+    : gps === 'denied' ? { text: 'Location is off. Turn it on in Settings', bg: colors.danger, fg: '#fff' }
+    : { text: 'Acquiring GPS…', bg: colors.border, fg: colors.text };
+
+  const controls = (
+    <View style={[styles.controls, { paddingBottom: insets.bottom + 12 }]}>
+      {saving ? (
+        <ActivityIndicator size="large" color={colors.accent} style={styles.centerControl} />
+      ) : rec.status === 'idle' ? (
+        <>
+          <SideButton icon={look.icon} label={ACTIVITY_LABELS[type]} onPress={() => setSportSheetOpen(true)} tint={look.color} />
+          <BigButton icon="play" color={colors.brand} iconColor={INK} label="Start" onPress={start} />
+          <SideButton icon={voiceOn ? 'volume-high' : 'volume-off'} label={voiceOn ? 'Voice on' : 'Voice off'}
+            onPress={() => setVoiceOn((v) => !v)} />
+        </>
+      ) : rec.status === 'recording' ? (
+        <>
+          <View style={styles.sideSpacer} />
+          <BigButton icon="pause" color={colors.text} iconColor={colors.background} label="Pause" onPress={pause} />
+          <SideButton icon={voiceOn ? 'volume-high' : 'volume-off'} label={voiceOn ? 'Voice on' : 'Voice off'}
+            onPress={() => setVoiceOn((v) => !v)} />
+        </>
+      ) : (
+        <>
+          <SideButton icon="delete-outline" label="Discard" onPress={confirmDiscard} tint={colors.danger} />
+          <BigButton icon="play" color={colors.brand} iconColor={INK} label="Resume" onPress={resume} />
+          <SideButton icon="flag-checkered" label="Finish" onPress={save} tint="#16A34A" />
+        </>
+      )}
+    </View>
+  );
 
   return (
     <View style={[styles.screen, { backgroundColor: colors.background }]}>
-      <RouteMap coords={rec.points} follow style={styles.map} />
-
-      <View style={[styles.panel, { backgroundColor: colors.card }]}>
-        {rec.status === 'idle' ? (
-          <>
-            <View style={styles.tiles}>
-              {ACTIVITY_TYPES.map((t) => {
-                const selected = t === type;
-                const l = CATEGORY_LOOKS[t];
-                return (
-                  <Pressable key={t} onPress={() => setType(t)}
-                    style={[styles.tile, { borderColor: selected ? l.color : colors.border }, selected && { backgroundColor: l.color }]}>
-                    <MaterialCommunityIcons name={l.icon} size={26} color={selected ? INK : colors.text} />
-                    <View style={styles.tileText}>
-                      <Text style={[styles.tileLabel, { color: selected ? INK : colors.text }]}>{ACTIVITY_LABELS[t]}</Text>
-                      <Text style={[styles.tileTagline, { color: selected ? INK : colors.textSecondary }]} numberOfLines={1}>{l.tagline}</Text>
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </View>
-            <Pressable onPress={() => setVoiceOn((v) => !v)} style={styles.voice}>
-              <MaterialCommunityIcons name={voiceOn ? 'volume-high' : 'volume-off'} size={20} color={colors.textSecondary} />
-              <Text style={{ color: colors.textSecondary }}>
-                {voiceOn ? `Voice updates every ${config.splitMeters / 1000} km` : 'Voice updates off'}
-              </Text>
+      {expanded ? (
+        // Big numbers, like a sports watch.
+        <View style={[styles.big, { paddingTop: insets.top + 12 }]}>
+          <View style={styles.bigTop}>
+            <Text style={[styles.bigTime, { color: colors.text }]}>{formatDuration(rec.elapsed)}</Text>
+            <Pressable onPress={() => setExpanded(false)} hitSlop={12} accessibilityLabel="Show map">
+              <MaterialCommunityIcons name="arrow-collapse" size={26} color={colors.text} />
             </Pressable>
-          </>
-        ) : (
-          <>
-            <Stat label={live.big.label} value={live.big.value} large />
-            {live.rows.map((row, i) => (
-              <View key={i} style={styles.statRow}>
-                {row.map((s) => <Stat key={s.label} label={s.label} value={s.value} />)}
+          </View>
+          {big.map((s) => (
+            <View key={s.label} style={styles.bigStat}>
+              <Text style={[styles.bigValue, { color: colors.text }]}>{s.value}</Text>
+              <Text style={[styles.bigLabel, { color: colors.textSecondary }]}>{s.label}</Text>
+            </View>
+          ))}
+          <View style={styles.splitBars}>
+            {Array.from({ length: Math.max(3, doneSplits.length) }, (_, i) => doneSplits[i]).slice(-6).map((s, i) => (
+              <View key={i} style={[styles.splitBar, { backgroundColor: s ? look.color : colors.border }]}>
+                {s && <Text style={styles.splitText}>{formatDuration(s.movingSeconds)}</Text>}
               </View>
             ))}
-          </>
-        )}
-
-        {rec.error && <Text style={[styles.error, { color: colors.danger }]}>{rec.error}</Text>}
-
-        <View style={styles.buttons}>
-          {saving ? (
-            <ActivityIndicator size="large" color={colors.accent} />
-          ) : rec.status === 'idle' ? (
-            <RoundButton label="Start" color={look.color} textColor={INK} onPress={start} />
-          ) : rec.status === 'recording' ? (
-            <RoundButton label="Pause" color={colors.text} textColor={colors.card} onPress={pause} />
-          ) : (
-            <>
-              <RoundButton label="Resume" color={look.color} textColor={INK} onPress={resume} />
-              <RoundButton label="Finish" color="#16A34A" onPress={save} />
-              <Pressable onPress={confirmDiscard} style={styles.discard}>
-                <Text style={{ color: colors.danger }}>Discard</Text>
-              </Pressable>
-            </>
-          )}
+          </View>
+          <Text style={[styles.bigLabel, { color: colors.textSecondary, textAlign: 'center' }]}>
+            Splits ({config.splitMeters / 1000} km)
+          </Text>
         </View>
-      </View>
+      ) : (
+        <>
+          <RouteMap coords={rec.points} follow style={styles.map} />
+          <Pressable onPress={() => router.navigate('/')} accessibilityLabel="Close"
+            style={[styles.close, { top: insets.top + 8, backgroundColor: colors.card }]}>
+            <MaterialCommunityIcons name="chevron-down" size={28} color={colors.text} />
+          </Pressable>
+          <View style={[styles.panel, { backgroundColor: colors.card }]}>
+            <View style={[styles.status, { backgroundColor: status.bg }]}>
+              <Text style={[styles.statusText, { color: status.fg }]}>{status.text}</Text>
+              <Pressable onPress={() => setExpanded(true)} hitSlop={12} accessibilityLabel="Show big numbers" style={styles.expand}>
+                <MaterialCommunityIcons name="arrow-expand" size={20} color={status.fg} />
+              </Pressable>
+            </View>
+            <View style={styles.panelStats}>
+              {panel.map((s) => (
+                <View key={s.label} style={styles.panelStat}>
+                  <Text style={[styles.panelValue, { color: colors.text }]}>{s.value}</Text>
+                  <Text style={[styles.panelLabel, { color: colors.textSecondary }]}>{s.label}</Text>
+                </View>
+              ))}
+            </View>
+            {rec.error && <Text style={[styles.error, { color: colors.danger }]}>{rec.error}</Text>}
+          </View>
+        </>
+      )}
+
+      <View style={{ backgroundColor: colors.card }}>{controls}</View>
+
+      <SportSheet visible={sportSheetOpen} selected={type} onSelect={setType} onClose={() => setSportSheetOpen(false)} />
     </View>
   );
 }
 
-function RoundButton({ label, color, textColor = '#fff', onPress }: {
-  label: string; color: string; textColor?: string; onPress: () => void;
+function BigButton({ icon, label, color, iconColor, onPress }: {
+  icon: IconName; label: string; color: string; iconColor: string; onPress: () => void;
 }) {
+  const colors = useColors();
   return (
-    <Pressable onPress={onPress} style={[styles.round, { backgroundColor: color }]}>
-      <Text style={[styles.roundText, { color: textColor }]}>{label}</Text>
+    <Pressable onPress={onPress} accessibilityLabel={label} style={styles.centerControl}>
+      <View style={[styles.bigButton, { backgroundColor: color }]}>
+        <MaterialCommunityIcons name={icon} size={40} color={iconColor} />
+      </View>
+      <Text style={[styles.controlLabel, { color: colors.text }]}>{label}</Text>
+    </Pressable>
+  );
+}
+
+function SideButton({ icon, label, onPress, tint }: { icon: IconName; label: string; onPress: () => void; tint?: string }) {
+  const colors = useColors();
+  return (
+    <Pressable onPress={onPress} accessibilityLabel={label} style={styles.side}>
+      <View style={[styles.sideButton, { backgroundColor: colors.background }]}>
+        <MaterialCommunityIcons name={icon} size={26} color={tint ?? colors.text} />
+      </View>
+      <Text style={[styles.controlLabel, { color: colors.textSecondary }]} numberOfLines={1}>{label}</Text>
     </Pressable>
   );
 }
@@ -239,20 +303,33 @@ function RoundButton({ label, color, textColor = '#fff', onPress }: {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   map: { flex: 1, height: undefined },
-  panel: { padding: 20, gap: 16 },
-  tiles: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
-  tile: {
-    flexBasis: '48%', flexGrow: 1, flexDirection: 'row', alignItems: 'center', gap: 10,
-    borderWidth: 1.5, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 10,
+  close: {
+    position: 'absolute', left: 12, width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
+    shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
   },
-  tileText: { flex: 1 },
-  tileLabel: { fontSize: 16, fontWeight: '700' },
-  tileTagline: { fontSize: 12 },
-  voice: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8 },
-  statRow: { flexDirection: 'row' },
-  error: { textAlign: 'center' },
-  buttons: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 16, minHeight: 84 },
-  round: { width: 84, height: 84, borderRadius: 42, alignItems: 'center', justifyContent: 'center' },
-  roundText: { fontSize: 16, fontWeight: '700' },
-  discard: { position: 'absolute', right: 0 },
+  panel: { paddingTop: 0 },
+  status: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', paddingVertical: 8 },
+  statusText: { fontWeight: '700', fontSize: 15 },
+  expand: { position: 'absolute', right: 14 },
+  panelStats: { flexDirection: 'row', paddingVertical: 14 },
+  panelStat: { flex: 1, alignItems: 'center' },
+  panelValue: { fontSize: 26, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  panelLabel: { fontSize: 12, marginTop: 2 },
+  error: { textAlign: 'center', paddingHorizontal: 20, paddingBottom: 8 },
+  controls: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-around', paddingTop: 12 },
+  centerControl: { alignItems: 'center', width: 110 },
+  bigButton: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },
+  side: { alignItems: 'center', width: 90, paddingTop: 8 },
+  sideButton: { width: 56, height: 56, borderRadius: 28, alignItems: 'center', justifyContent: 'center' },
+  sideSpacer: { width: 90 },
+  controlLabel: { marginTop: 6, fontWeight: '600', fontSize: 13 },
+  big: { flex: 1, paddingHorizontal: 20, gap: 18 },
+  bigTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  bigTime: { fontSize: 64, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  bigStat: { alignItems: 'center' },
+  bigValue: { fontSize: 54, fontWeight: '800', fontVariant: ['tabular-nums'] },
+  bigLabel: { fontSize: 15, fontWeight: '600' },
+  splitBars: { flexDirection: 'row', gap: 6, marginTop: 'auto' },
+  splitBar: { flex: 1, height: 26, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
+  splitText: { color: INK, fontWeight: '700', fontSize: 12 },
 });
