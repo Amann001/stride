@@ -6,6 +6,7 @@ import { ZodError } from 'zod';
 import { config } from './config';
 import { activityRoutes } from './routes/activities';
 import { authRoutes } from './routes/auth';
+import { statsRoutes } from './routes/stats';
 
 // Tell TypeScript what we put inside login tokens.
 declare module '@fastify/jwt' {
@@ -50,6 +51,7 @@ export async function buildApp() {
   app.get('/health', async () => ({ ok: true }));
   await app.register(authRoutes);
   await app.register(activityRoutes);
+  await app.register(statsRoutes);
 
   return app;
 }

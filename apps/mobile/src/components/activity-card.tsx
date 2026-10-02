@@ -1,49 +1,81 @@
-import {
-  ACTIVITY_LABELS,
-  formatDistance,
-  formatDuration,
-  formatPaceOrSpeed,
-  paceOrSpeedLabel,
-  type ActivitySummary,
-} from '@repo/shared';
+import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
+import { ACTIVITY_LABELS, decodePolyline, type ActivitySummary } from '@repo/shared';
 import { Link } from 'expo-router';
+import { useMemo } from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 
-import { Stat } from '@/components/stat';
+import { AchievementBanner, MEDAL_COLORS } from '@/components/achievements';
+import { CategoryIcon } from '@/components/category-icon';
+import { RouteMap } from '@/components/route-map';
 import { useColors } from '@/constants/theme';
+import { cardStats } from '@/lib/activity-stats';
+import { useAuth } from '@/lib/auth';
 
-// One activity in the list. Tapping it opens the detail screen.
+// One activity in the feed: who and when, the numbers that matter for this kind of
+// activity, its best achievement, and a map of the route. Tapping opens the detail screen.
 export function ActivityCard({ activity }: { activity: ActivitySummary }) {
   const colors = useColors();
-  const date = new Date(activity.startedAt).toLocaleString(undefined, {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  const { user } = useAuth();
+  const route = useMemo(() => decodePolyline(activity.polyline), [activity.polyline]);
+  const date = new Date(activity.startedAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+  const [headline, ...others] = activity.achievements;
 
   return (
     // <Link asChild> only accepts a single style object on its child, not an array, so merge them first.
     <Link href={{ pathname: '/activity/[id]', params: { id: activity.id } }} asChild>
-      <Pressable style={StyleSheet.flatten([styles.card, { backgroundColor: colors.card, borderColor: colors.border }])}>
-        <Text style={[styles.meta, { color: colors.textSecondary }]}>
-          {ACTIVITY_LABELS[activity.type]} · {date}
-        </Text>
-        <Text style={[styles.title, { color: colors.text }]}>{activity.title}</Text>
-        <View style={styles.stats}>
-          <Stat label="Distance" value={formatDistance(activity.distanceMeters)} />
-          <Stat
-            label={paceOrSpeedLabel(activity.type)}
-            value={formatPaceOrSpeed(activity.type, activity.distanceMeters, activity.movingSeconds)}
-          />
-          <Stat label="Time" value={formatDuration(activity.movingSeconds)} />
+      <Pressable style={StyleSheet.flatten([styles.card, { backgroundColor: colors.card }])}>
+        <View style={styles.padded}>
+          <View style={styles.header}>
+            <CategoryIcon type={activity.type} size={44} />
+            <View style={styles.headerText}>
+              <Text style={[styles.name, { color: colors.text }]}>{user?.name}</Text>
+              <Text style={[styles.meta, { color: colors.textSecondary }]}>
+                {date} · {ACTIVITY_LABELS[activity.type]}
+              </Text>
+            </View>
+          </View>
+
+          <Text style={[styles.title, { color: colors.text }]}>{activity.title}</Text>
+
+          <View style={styles.stats}>
+            {cardStats(activity).map((s) => (
+              <View key={s.label} style={styles.stat}>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>{s.label}</Text>
+                <Text style={[styles.statValue, { color: colors.text }]}>{s.value}</Text>
+              </View>
+            ))}
+            {activity.achievements.length > 0 && (
+              <View style={styles.stat}>
+                <Text style={[styles.statLabel, { color: colors.textSecondary }]}>Achievements</Text>
+                <View style={styles.medalCount}>
+                  <MaterialCommunityIcons name="medal" size={20} color={MEDAL_COLORS[1]} />
+                  <Text style={[styles.statValue, { color: colors.text }]}>{activity.achievements.length}</Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {headline && <AchievementBanner achievement={headline} more={others.length} />}
         </View>
+
+        {route.length > 1 && <RouteMap coords={route} preview style={styles.map} />}
       </Pressable>
     </Link>
   );
 }
 
 const styles = StyleSheet.create({
-  card: { borderRadius: 12, borderWidth: StyleSheet.hairlineWidth, padding: 16, marginBottom: 12 },
-  meta: { fontSize: 13 },
-  title: { fontSize: 18, fontWeight: '700', marginTop: 4, marginBottom: 12 },
-  stats: { flexDirection: 'row' },
+  card: { borderRadius: 16, marginBottom: 12, overflow: 'hidden' },
+  padded: { padding: 16, gap: 14 },
+  header: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  headerText: { flex: 1 },
+  name: { fontSize: 16, fontWeight: '700' },
+  meta: { fontSize: 13, marginTop: 2 },
+  title: { fontSize: 22, fontWeight: '800' },
+  stats: { flexDirection: 'row', gap: 16 },
+  stat: { flexShrink: 1 },
+  statLabel: { fontSize: 13, marginBottom: 2 },
+  statValue: { fontSize: 18, fontWeight: '700', fontVariant: ['tabular-nums'] },
+  medalCount: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  map: { height: 190 },
 });

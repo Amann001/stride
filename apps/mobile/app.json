@@ -44,7 +44,13 @@
           "locationWhenInUsePermission": "We use your location to record your route while you track an activity."
         }
       ],
-      "expo-secure-store"
+      "expo-secure-store",
+      [
+        "expo-sensors",
+        {
+          "motionPermission": "We count your steps while you record a run, walk or hike."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,

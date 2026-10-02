@@ -1,4 +1,11 @@
-import type { ActivityDetail, ActivitySummary, AuthResponse, CreateActivityInput, User } from '@repo/shared';
+import type {
+  ActivityDetail,
+  ActivitySummary,
+  AuthResponse,
+  CreateActivityInput,
+  User,
+  UserStats,
+} from '@repo/shared';
 import Constants from 'expo-constants';
 
 // Works out where the API lives. In development the phone loads the app from your
@@ -51,4 +58,7 @@ export const api = {
   createActivity: (input: CreateActivityInput) =>
     request<ActivitySummary>('/activities', { method: 'POST', body: input }),
   deleteActivity: (id: string) => request<void>(`/activities/${id}`, { method: 'DELETE' }),
+  // Sends the phone's time zone so "this week" starts on your Monday, not the server's.
+  getStats: () =>
+    request<UserStats>(`/stats?tz=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}`),
 };

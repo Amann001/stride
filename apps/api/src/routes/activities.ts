@@ -1,16 +1,19 @@
 import {
+  CATEGORIES,
   cleanTrack,
-  computeStats,
   createActivitySchema,
   encodePolyline,
+  type Achievement,
   type ActivityDetail,
   type ActivitySummary,
   type ActivityType,
+  type BestEffort,
   type TrackPoint,
 } from '@repo/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { analyseActivity } from '../analysis';
 import { pool } from '../db';
 
 interface ActivityRow {
@@ -24,13 +27,17 @@ interface ActivityRow {
   moving_seconds: number;
   distance_meters: number;
   elevation_gain_meters: number;
+  max_speed_mps: number;
+  steps: number | null;
+  best_efforts: BestEffort[] | null;
+  achievements: Achievement[];
   polyline: string;
   points?: TrackPoint[];
   created_at: Date;
 }
 
 const SUMMARY_COLUMNS = `id, user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
-  distance_meters, elevation_gain_meters, polyline, created_at`;
+  distance_meters, elevation_gain_meters, max_speed_mps, steps, best_efforts, achievements, polyline, created_at`;
 
 function toSummary(row: ActivityRow): ActivitySummary {
   return {
@@ -44,6 +51,10 @@ function toSummary(row: ActivityRow): ActivitySummary {
     movingSeconds: row.moving_seconds,
     distanceMeters: row.distance_meters,
     elevationGainMeters: row.elevation_gain_meters,
+    maxSpeedMps: row.max_speed_mps,
+    steps: row.steps,
+    bestEfforts: row.best_efforts ?? [],
+    achievements: row.achievements,
     polyline: row.polyline,
     createdAt: row.created_at.toISOString(),
   };
@@ -64,11 +75,19 @@ export async function activityRoutes(app: FastifyInstance) {
     if (points.length < 2) {
       return reply.code(400).send({ error: 'Not enough good GPS points to save this activity' });
     }
-    const stats = computeStats(points);
+    // Rides don't count steps, even if the phone sent some.
+    const steps = CATEGORIES[input.type].countsSteps ? (input.steps ?? null) : null;
+    const { stats, maxSpeedMps, bestEfforts, achievements } = await analyseActivity(
+      pool,
+      req.user.sub,
+      input.type,
+      points,
+      steps,
+    );
     const { rows } = await pool.query<ActivityRow>(
       `INSERT INTO activities (user_id, type, title, description, started_at, elapsed_seconds, moving_seconds,
-         distance_meters, elevation_gain_meters, polyline, points)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+         distance_meters, elevation_gain_meters, polyline, points, steps, max_speed_mps, best_efforts, achievements)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING ${SUMMARY_COLUMNS}`,
       [
         req.user.sub,
@@ -82,6 +101,10 @@ export async function activityRoutes(app: FastifyInstance) {
         stats.elevationGainMeters,
         encodePolyline(points),
         JSON.stringify(points),
+        steps,
+        maxSpeedMps,
+        JSON.stringify(bestEfforts),
+        JSON.stringify(achievements),
       ],
     );
     return reply.code(201).send(toSummary(rows[0]));
