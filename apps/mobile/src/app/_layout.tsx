@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Animated, AppState, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { BrandSplash } from '@/components/brand-splash';
+import { TextPromptHost } from '@/components/text-prompt';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { uploadPending } from '@/lib/pending-activities';
 
@@ -80,6 +81,8 @@ function RootNavigator() {
           </Stack.Protected>
         </Stack>
       )}
+      {/* Text pop-ups on Android (iPhone uses the system Alert.prompt). */}
+      <TextPromptHost />
       {showIntro && (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: introOpacity }]} pointerEvents="none">
           <BrandSplash />

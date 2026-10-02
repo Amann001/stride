@@ -1,11 +1,12 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { ACTIVITY_LABELS, HEATMAP_INFO, HEATMAP_KINDS, type ActivityType, type HeatmapKind } from '@repo/shared';
 import type { ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { useColors } from '@/constants/theme';
+import { ANDROID_MAP_STYLES } from '@/lib/android-map-style';
 import { updateMapPrefs, useMapPrefs, type MapStyle } from '@/lib/map-prefs';
 
 const MAP_STYLES: { key: MapStyle; label: string }[] = [
@@ -14,6 +15,8 @@ const MAP_STYLES: { key: MapStyle; label: string }[] = [
   { key: 'hybrid', label: 'Hybrid' },
   { key: 'mutedStandard', label: 'Muted' },
 ];
+// Android maps (free OpenFreeMap) have no satellite imagery, so only Standard and Muted there.
+const AVAILABLE_STYLES = Platform.OS === 'android' ? MAP_STYLES.filter((m) => ANDROID_MAP_STYLES.includes(m.key)) : MAP_STYLES;
 
 // Colours for the little heatmap pictures, matching the real tiles.
 const HEAT_COLORS: Record<HeatmapKind, [string, string]> = {
@@ -132,7 +135,7 @@ export function MapLayersSheet({ visible, sport, onClose }: {
         <ScrollView contentContainerStyle={styles.content}>
           <Text style={[styles.section, { color: colors.text }]}>Map Types</Text>
           <View style={styles.row}>
-            {MAP_STYLES.map((m) => (
+            {AVAILABLE_STYLES.map((m) => (
               <Choice key={m.key} kind={m.key} label={m.label} selected={prefs.mapStyle === m.key}
                 onPress={() => updateMapPrefs({ mapStyle: m.key })} />
             ))}
@@ -152,7 +155,9 @@ export function MapLayersSheet({ visible, sport, onClose }: {
 
           <Text style={[styles.section, { color: colors.text }]}>Layers</Text>
           <View style={styles.row}>
-            <Choice kind="pois" label="POIs" selected={prefs.pois} onPress={() => updateMapPrefs({ pois: !prefs.pois })} />
+            {Platform.OS !== 'android' && (
+              <Choice kind="pois" label="POIs" selected={prefs.pois} onPress={() => updateMapPrefs({ pois: !prefs.pois })} />
+            )}
             <Choice kind="bikeLanes" label="Bike Lanes" selected={prefs.bikeLanes}
               onPress={() => updateMapPrefs({ bikeLanes: !prefs.bikeLanes })} />
           </View>

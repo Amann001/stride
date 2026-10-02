@@ -27,16 +27,16 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
-import MapView, { Marker, Polyline, UrlTile, type Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { BottomSheet } from '@/components/bottom-sheet';
 import { MapLayersSheet } from '@/components/map-layers-sheet';
+import { MapsTabMap, type MapsTabMapHandle } from '@/components/maps-tab-map';
 import { OptionSheet, type Option } from '@/components/option-sheet';
 import { DIFFICULTY_LOOK, DifficultyTag, RouteCard, routeSourceLabel } from '@/components/route-card';
 import { SportSheet } from '@/components/sport-sheet';
 import { CATEGORY_LOOKS, type IconName } from '@/constants/categories';
-import { INK, LIME, useColors } from '@/constants/theme';
+import { INK, useColors } from '@/constants/theme';
 import { api, heatmapTileUrl } from '@/lib/api';
 import { useMapPrefs, type MapStyle } from '@/lib/map-prefs';
 import { storage } from '@/lib/storage';
@@ -70,7 +70,7 @@ export default function MapsScreen() {
   const { height: screenH } = useWindowDimensions();
   const prefs = useMapPrefs();
   const savedCopies = useSavedCopies();
-  const mapRef = useRef<MapView>(null);
+  const mapRef = useRef<MapsTabMapHandle>(null);
 
   const [sport, setSport] = useState<ActivityType>('run');
   const [mode, setMode] = useState<Mode>('routes');
@@ -133,8 +133,7 @@ export default function MapsScreen() {
   }, []);
   const filters = { sport, lengthIdx };
 
-  const goTo = (p: LatLng, zoom = 0.03) =>
-    mapRef.current?.animateToRegion({ latitude: p.lat, longitude: p.lng, latitudeDelta: zoom, longitudeDelta: zoom }, 500);
+  const goTo = (p: LatLng, zoom = 0.03) => mapRef.current?.goTo(p, zoom);
 
   // Start where you are.
   const locateMe = useCallback(async () => {
@@ -191,14 +190,14 @@ export default function MapsScreen() {
   const selected = allRoutes.find((r) => r.id === selectedId) ?? null;
 
   const lines = useMemo(
-    () => allRoutes.map((r) => ({ route: r, coords: decodePolyline(r.polyline).map((c) => ({ latitude: c.lat, longitude: c.lng })) })),
-    [allRoutes],
+    () => allRoutes.map((r) => ({ id: r.id, coords: decodePolyline(r.polyline), selected: r.id === selectedId })),
+    [allRoutes, selectedId],
   );
   const activityLines = useMemo(
     () =>
       activities
         .filter((a) => a.polyline && a.type === sport)
-        .map((a) => ({ activity: a, coords: decodePolyline(a.polyline).map((c) => ({ latitude: c.lat, longitude: c.lng })) }))
+        .map((a) => ({ id: a.id, activity: a, coords: decodePolyline(a.polyline), color: CATEGORY_LOOKS[a.type].color }))
         .filter((l) => l.coords.length > 1),
     [activities, sport],
   );
@@ -207,11 +206,9 @@ export default function MapsScreen() {
     && distanceBetween(mapCenter, searchCenter) > SEARCH_HERE_METERS;
 
   const toggle3d = async () => {
-    const cam = await mapRef.current?.getCamera();
-    if (!cam) return;
     const next = !pitched;
     setPitched(next);
-    mapRef.current?.animateCamera({ pitch: next ? 60 : 0, altitude: next ? Math.min(cam.altitude ?? 1500, 1500) : cam.altitude }, { duration: 600 });
+    await mapRef.current?.setPitched(next);
   };
 
   const searchPlace = async () => {
@@ -252,41 +249,20 @@ export default function MapsScreen() {
 
   return (
     <View style={styles.screen}>
-      <MapView
+      <MapsTabMap
         ref={mapRef}
-        style={StyleSheet.absoluteFill}
-        mapType={prefs.mapStyle}
-        showsUserLocation
-        showsPointsOfInterests={prefs.pois}
-        showsBuildings
-        showsCompass={false}
-        onRegionChangeComplete={(r: Region) => setMapCenter(toLatLng(r))}
-        onPress={() => setSelectedId(null)}>
-        {prefs.bikeLanes && <UrlTile urlTemplate={BIKE_LANES_URL} maximumZ={19} zIndex={1} tileSize={256} />}
-        {prefs.heatmap && tile && (
-          <UrlTile key={`${prefs.heatmap}-${sport}-${tile.at}`} urlTemplate={heatmapTileUrl(prefs.heatmap, sport, tile.token)}
-            maximumZ={18} zIndex={2} tileSize={256} />
-        )}
-        {mode === 'routes'
-          ? lines.map(({ route, coords }) => {
-              const isSelected = route.id === selectedId;
-              return (
-                <Polyline key={route.id} coordinates={coords} tappable onPress={() => setSelectedId(route.id)}
-                  strokeColor={isSelected ? LIME : 'rgba(200,243,29,0.55)'} strokeWidth={isSelected ? 6 : 4}
-                  zIndex={isSelected ? 4 : 3} />
-              );
-            })
-          : activityLines.map(({ activity, coords }) => (
-              <Polyline key={activity.id} coordinates={coords} tappable
-                onPress={() => router.push({ pathname: '/activity/[id]', params: { id: activity.id } })}
-                strokeColor={CATEGORY_LOOKS[activity.type].color} strokeWidth={4} zIndex={3} />
-            ))}
-        {selected && (
-          <Marker coordinate={{ latitude: selected.start.lat, longitude: selected.start.lng }} anchor={{ x: 0.5, y: 0.5 }}>
-            <View style={[styles.startDot, { borderColor: INK }]} />
-          </Marker>
-        )}
-      </MapView>
+        mapStyle={prefs.mapStyle}
+        pois={prefs.pois}
+        bikeLanesUrl={prefs.bikeLanes ? BIKE_LANES_URL : null}
+        heatmapUrl={prefs.heatmap && tile ? heatmapTileUrl(prefs.heatmap, sport, tile.token) : null}
+        routes={mode === 'routes' ? lines : []}
+        activities={mode === 'routes' ? [] : activityLines}
+        selectedStart={selected ? selected.start : null}
+        onRoutePress={setSelectedId}
+        onActivityPress={(id) => router.push({ pathname: '/activity/[id]', params: { id } })}
+        onMapPress={() => setSelectedId(null)}
+        onCenterChange={setMapCenter}
+      />
 
       {/* Search pill and filter chips */}
       <View style={[styles.top, { paddingTop: insets.top + 6 }]}>
@@ -573,7 +549,6 @@ const styles = StyleSheet.create({
   mapButton: { width: 46, height: 46, borderRadius: 23, alignItems: 'center', justifyContent: 'center', ...shadow },
   badge: { position: 'absolute', top: -3, right: -3, minWidth: 18, height: 18, borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
   badgeText: { color: INK, fontSize: 11, fontWeight: '700' },
-  startDot: { width: 16, height: 16, borderRadius: 8, backgroundColor: '#22C55E', borderWidth: 3 },
   selectedCard: { position: 'absolute', left: 12, right: 12, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 10, ...shadow },
   selectedText: { flex: 1, gap: 3 },
   selectedName: { fontSize: 17, fontWeight: '700' },

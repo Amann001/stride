@@ -5,6 +5,7 @@
   "dependencies": {
     "@expo/ui": "~57.0.21",
     "@expo/vector-icons": "^15.0.2",
+    "@maplibre/maplibre-react-native": "^11.4.1",
     "@react-native-async-storage/async-storage": "2.2.0",
     "@react-native-community/datetimepicker": "9.1.0",
     "@repo/shared": "*",
@@ -54,7 +55,9 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
-    "publish:ios": "npx eas-cli@latest update --channel production --platform ios --environment production --auto --non-interactive"
+    "publish:ios": "npx eas-cli@latest update --channel production --platform ios --environment production --auto --non-interactive",
+    "publish:android": "npx eas-cli@latest update --channel production --platform android --environment production --auto --non-interactive",
+    "build:android": "npx eas-cli@latest build --platform android --profile android-apk --non-interactive --no-wait"
   },
   "private": true
 }

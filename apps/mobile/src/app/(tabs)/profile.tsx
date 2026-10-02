@@ -26,6 +26,7 @@ import { ActivityCard } from '@/components/activity-card';
 import { Avatar } from '@/components/avatar';
 import { ChallengeBadge } from '@/components/challenge-card';
 import { StreakCalendar } from '@/components/streak-calendar';
+import { promptText } from '@/components/text-prompt';
 import { HeaderButton, TabHeader } from '@/components/tab-header';
 import { WeeklyChart } from '@/components/weekly-chart';
 import { CATEGORY_LOOKS, type IconName } from '@/constants/categories';
@@ -167,25 +168,23 @@ function Progress({ stats, sport, setSport, onGoalSaved }: {
   const weeks = sport === 'all' ? stats?.weeks : cat?.weeks;
   const color = sport === 'all' ? LIME : CATEGORY_LOOKS[sport].color;
 
-  const setGoal = () => {
+  const setGoal = async () => {
     if (sport === 'all') return;
-    Alert.prompt(
-      `Weekly ${ACTIVITY_LABELS[sport].toLowerCase()} goal`,
-      'How many kilometers a week? Enter 0 to remove the goal.',
-      async (text) => {
-        const km = Number(text?.replace(',', '.'));
-        if (!Number.isFinite(km) || km < 0) return;
-        try {
-          await api.setWeeklyGoal(sport, Math.round(km * 1000));
-          onGoalSaved();
-        } catch (err) {
-          Alert.alert('Could not save', err instanceof Error ? err.message : 'Please try again.');
-        }
-      },
-      'plain-text',
-      cat?.weeklyGoalMeters ? String(cat.weeklyGoalMeters / 1000) : '',
-      'decimal-pad',
-    );
+    const text = await promptText({
+      title: `Weekly ${ACTIVITY_LABELS[sport].toLowerCase()} goal`,
+      message: 'How many kilometers a week? Enter 0 to remove the goal.',
+      defaultValue: cat?.weeklyGoalMeters ? String(cat.weeklyGoalMeters / 1000) : '',
+      keyboardType: 'decimal-pad',
+    });
+    if (text === null) return;
+    const km = Number(text.replace(',', '.'));
+    if (!Number.isFinite(km) || km < 0) return;
+    try {
+      await api.setWeeklyGoal(sport, Math.round(km * 1000));
+      onGoalSaved();
+    } catch (err) {
+      Alert.alert('Could not save', err instanceof Error ? err.message : 'Please try again.');
+    }
   };
 
   return (
