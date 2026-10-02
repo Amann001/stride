@@ -28,8 +28,11 @@ import type {
 } from '@repo/shared';
 import Constants from 'expo-constants';
 
-// Works out where the API lives. In development the phone loads the app from your
-// computer, so we reuse that computer's address and swap in the API port (4000).
+// Works out where the API lives.
+// - Published app (EAS Update / store build): EXPO_PUBLIC_API_URL from .env.production,
+//   i.e. the cloud server, so it works anywhere on Wi-Fi or mobile data.
+// - Development (`npm run dev:mobile`): the phone loads the app from your computer, so we
+//   reuse that computer's address and swap in the API port (4000).
 function resolveBaseUrl(): string {
   if (process.env.EXPO_PUBLIC_API_URL) return process.env.EXPO_PUBLIC_API_URL;
   const host = Constants.expoConfig?.hostUri?.split(':')[0];
