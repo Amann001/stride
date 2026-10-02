@@ -4,3 +4,14 @@ node_modules/
 dist/
 *.tsbuildinfo
 .DS_Store
+
+# Screenshots, photos and videos dropped into the main folder for reference (never part of the app).
+# App images live in subfolders like apps/mobile/assets, so they are not affected.
+/*.png
+/*.jpg
+/*.jpeg
+/*.webp
+/*.heic
+/*.mp4
+/*.mov
+WhatsApp *

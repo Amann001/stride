@@ -47,7 +47,7 @@ export default function NewClubScreen() {
     }
   };
 
-  const input = [styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }];
+  const input = [styles.input, { backgroundColor: colors.raised, borderColor: colors.border, color: colors.text }];
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -95,5 +95,5 @@ const styles = StyleSheet.create({
   sports: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   sport: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1.5, borderRadius: 999, paddingHorizontal: 14, paddingVertical: 8 },
   create: { borderRadius: 999, paddingVertical: 15, alignItems: 'center', marginTop: 16 },
-  createText: { color: INK, fontWeight: '800', fontSize: 16 },
+  createText: { color: INK, fontWeight: '700', fontSize: 16 },
 });

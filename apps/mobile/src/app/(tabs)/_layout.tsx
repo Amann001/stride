@@ -61,5 +61,5 @@ export default function TabsLayout() {
 
 const styles = StyleSheet.create({
   avatar: { width: 26, height: 26, borderRadius: 13, alignItems: 'center', justifyContent: 'center', borderWidth: 1.5 },
-  avatarText: { fontSize: 12, fontWeight: '800' },
+  avatarText: { fontSize: 12, fontWeight: '700' },
 });

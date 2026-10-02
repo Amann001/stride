@@ -42,23 +42,39 @@ export class TtlCache<V> {
 }
 
 // Fetches JSON from a map service. Busy free services sometimes turn a request away
-// ("too many requests" or a server error), so wait a moment and try once more.
+// ("too many requests" or a server error), so wait and try again, a little longer each time.
+const RETRY_WAITS_MS = [1200, 3500];
+
 async function getJson<T>(url: string, attempt = 0): Promise<T> {
   let res: Response;
   try {
     res = await fetch(url, { headers: { 'User-Agent': USER_AGENT }, signal: AbortSignal.timeout(20_000) });
   } catch (err) {
-    if (attempt === 0) return retryAfterPause(url);
+    if (attempt < RETRY_WAITS_MS.length) return retryAfterPause(url, attempt);
     throw new RoutingError(`Map service unreachable: ${(err as Error).message}`);
   }
-  if ((res.status === 429 || res.status >= 500) && attempt === 0) return retryAfterPause(url);
+  if ((res.status === 429 || res.status >= 500) && attempt < RETRY_WAITS_MS.length) return retryAfterPause(url, attempt);
   if (!res.ok) throw new RoutingError(`Map service replied ${res.status}`);
   return (await res.json()) as T;
 }
 
-async function retryAfterPause<T>(url: string): Promise<T> {
-  await new Promise((r) => setTimeout(r, 1200));
-  return getJson<T>(url, 1);
+async function retryAfterPause<T>(url: string, attempt: number): Promise<T> {
+  await new Promise((r) => setTimeout(r, RETRY_WAITS_MS[attempt]));
+  return getJson<T>(url, attempt + 1);
+}
+
+// The elevation service allows only a few requests per second, and one route suggestion
+// asks for three at once. Send them one at a time, a short moment apart.
+let elevationQueue: Promise<unknown> = Promise.resolve();
+const ELEVATION_GAP_MS = 250;
+
+function queueElevation<T>(task: () => Promise<T>): Promise<T> {
+  const run = elevationQueue.then(task, task);
+  elevationQueue = run.then(
+    () => new Promise((r) => setTimeout(r, ELEVATION_GAP_MS)),
+    () => new Promise((r) => setTimeout(r, ELEVATION_GAP_MS)),
+  );
+  return run;
 }
 
 const routeCache = new TtlCache<{ coords: LatLng[]; distanceMeters: number }>(500, 24 * 3600_000);
@@ -148,7 +164,8 @@ export async function elevationAlong(coords: LatLng[]): Promise<{ profile: Profi
   const key = `${lats}|${lngs}`;
   let alts = elevationCache.get(key);
   if (!alts) {
-    const data = await getJson<{ elevation?: number[] }>(`https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`);
+    const url = `https://api.open-meteo.com/v1/elevation?latitude=${lats}&longitude=${lngs}`;
+    const data = await queueElevation(() => getJson<{ elevation?: number[] }>(url));
     alts = data.elevation ?? [];
     elevationCache.set(key, alts);
   }

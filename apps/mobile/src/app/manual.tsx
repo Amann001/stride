@@ -69,7 +69,7 @@ export default function ManualActivityScreen() {
     }
   };
 
-  const input = [styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }];
+  const input = [styles.input, { backgroundColor: colors.raised, borderColor: colors.border, color: colors.text }];
 
   return (
     <KeyboardAvoidingView behavior="padding" style={[styles.screen, { backgroundColor: colors.background }]}>
@@ -133,7 +133,7 @@ export default function ManualActivityScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   content: { padding: 16, gap: 12, paddingBottom: 48 },
-  heading: { fontSize: 20, fontWeight: '800', marginTop: 8 },
+  heading: { fontSize: 20, fontWeight: '700', marginTop: 8 },
   label: { fontSize: 13, fontWeight: '600', marginBottom: -4 },
   field: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, minHeight: 52 },
   fieldText: { flex: 1, fontSize: 16 },
@@ -142,5 +142,5 @@ const styles = StyleSheet.create({
   third: { flex: 1, textAlign: 'center' },
   half: { flex: 1, gap: 8 },
   save: { borderRadius: 999, paddingVertical: 15, alignItems: 'center', marginTop: 12 },
-  saveText: { color: INK, fontWeight: '800', fontSize: 16 },
+  saveText: { color: INK, fontWeight: '700', fontSize: 16 },
 });

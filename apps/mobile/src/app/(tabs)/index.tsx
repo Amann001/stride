@@ -7,6 +7,7 @@ import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, Sty
 import { ActivityCard } from '@/components/activity-card';
 import { ChallengeCard } from '@/components/challenge-card';
 import { HighlightsCarousel } from '@/components/highlights-carousel';
+import { Band, Section, SectionHeader, SIDE } from '@/components/section';
 import { HeaderButton, TabHeader, Wordmark } from '@/components/tab-header';
 import { WhoToFollow } from '@/components/who-to-follow';
 import { useColors } from '@/constants/theme';
@@ -71,32 +72,47 @@ export default function HomeScreen() {
 
   const hasFriendsActivity = feed.some((a) => a.userId !== user?.id);
 
-  const findFriends = !hasFriendsActivity && (
-    <Pressable style={[styles.prompt, { backgroundColor: colors.card }]} onPress={() => router.push('/search')}>
-      <MaterialCommunityIcons name="account-multiple-plus-outline" size={30} color={colors.accent} />
-      <View style={styles.promptText}>
-        <Text style={[styles.promptTitle, { color: colors.text }]}>Way to go!</Text>
-        <Text style={{ color: colors.textSecondary }}>Find friends to inspire your next activity.</Text>
-      </View>
-      <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} />
-    </Pressable>
-  );
-
-  const suggestedChallenges = challenges.length > 0 && (
-    <View style={styles.section}>
-      <Text style={[styles.sectionTitle, { color: colors.text }]}>Suggested Challenges</Text>
-      <Text style={{ color: colors.textSecondary, marginBottom: 12 }}>
-        Make staying active a little easier and more fun.
-      </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.challengeRow}>
-        {challenges.map((c) => (
-          <ChallengeCard key={c.id} challenge={c} onChange={load} style={styles.challengeCard} />
-        ))}
-      </ScrollView>
-      <Pressable onPress={() => router.navigate('/groups')} style={styles.seeAll}>
-        <Text style={{ color: colors.accent, fontWeight: '700' }}>Explore All Challenges</Text>
-      </Pressable>
-    </View>
+  // The sections Strava shows after your first activity: a nudge to find friends,
+  // Who to Follow, and challenges. Each is a full-width section after a band.
+  const extras = (
+    <>
+      {!hasFriendsActivity && (
+        <>
+          <Band />
+          <Pressable style={[styles.prompt, { backgroundColor: colors.card }]} onPress={() => router.push('/search')}>
+            <MaterialCommunityIcons name="account-multiple-plus-outline" size={28} color={colors.accent} />
+            <View style={styles.promptText}>
+              <Text style={[styles.promptTitle, { color: colors.text }]}>Way to go!</Text>
+              <Text style={{ color: colors.textSecondary }}>Find friends to inspire your next activity.</Text>
+            </View>
+            <MaterialCommunityIcons name="chevron-right" size={24} color={colors.textSecondary} />
+          </Pressable>
+        </>
+      )}
+      {suggested.length > 0 && (
+        <>
+          <Band />
+          <WhoToFollow athletes={suggested} />
+        </>
+      )}
+      {challenges.length > 0 && (
+        <>
+          <Band />
+          <Section flush>
+            <SectionHeader title="Suggested Challenges" subtitle="Make staying active a little easier and more fun."
+              style={styles.padded} />
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.challengeRow}>
+              {challenges.map((c) => (
+                <ChallengeCard key={c.id} challenge={c} onChange={load} style={styles.challengeCard} />
+              ))}
+            </ScrollView>
+            <Pressable onPress={() => router.navigate('/groups')} style={styles.seeAll} hitSlop={8}>
+              <Text style={{ color: colors.accent, fontWeight: '700' }}>Explore All Challenges</Text>
+            </Pressable>
+          </Section>
+        </>
+      )}
+    </>
   );
 
   return (
@@ -118,45 +134,43 @@ export default function HomeScreen() {
         }
       />
       <FlatList
+        style={{ backgroundColor: colors.separator }}
         contentContainerStyle={styles.list}
         data={feed}
         keyExtractor={(a) => a.id}
+        ItemSeparatorComponent={Band}
         renderItem={({ item, index }) => (
           <>
             <ActivityCard activity={item} />
-            {index === 0 && (
-              <>
-                {findFriends}
-                <WhoToFollow athletes={suggested} />
-                {suggestedChallenges}
-              </>
-            )}
+            {index === 0 && extras}
           </>
         )}
         onEndReached={loadMore}
         onEndReachedThreshold={0.5}
-        ListFooterComponent={loadingMore ? <ActivityIndicator style={styles.more} color={colors.accent} /> : null}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-        ListHeaderComponent={
-          <View style={styles.header}>
-            <HighlightsCarousel stats={stats} />
+        ListFooterComponent={
+          <View style={{ backgroundColor: colors.card }}>
+            {loadingMore && <ActivityIndicator style={styles.more} color={colors.accent} />}
           </View>
         }
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+        ListHeaderComponent={
+          <>
+            <HighlightsCarousel stats={stats} />
+            <Band />
+          </>
+        }
         ListEmptyComponent={
-          <View style={styles.empty}>
-            <Text style={[styles.emptyTitle, { color: colors.text }]}>
-              {error ? "Couldn't reach the server" : 'No activities yet'}
-            </Text>
-            <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
-              {error ?? 'Tap Record and head out for a run, ride, walk or hike.'}
-            </Text>
-            {!error && (
-              <>
-                {findFriends}
-                <WhoToFollow athletes={suggested} />
-                {suggestedChallenges}
-              </>
-            )}
+          <View>
+            <Section style={styles.empty}>
+              <MaterialCommunityIcons name={error ? 'wifi-off' : 'run-fast'} size={40} color={colors.textSecondary} />
+              <Text style={[styles.emptyTitle, { color: colors.text }]}>
+                {error ? "Couldn't reach the server" : 'No activities yet'}
+              </Text>
+              <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
+                {error ?? 'Tap Record and head out for a run, ride, walk or hike. Your activities, and those of people you follow, show up here.'}
+              </Text>
+            </Section>
+            {!error && extras}
           </View>
         }
       />
@@ -166,17 +180,17 @@ export default function HomeScreen() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1 },
-  list: { padding: 12, flexGrow: 1 },
-  header: { marginBottom: 12 },
-  section: { marginTop: 8, marginBottom: 20, alignSelf: 'stretch' },
-  sectionTitle: { fontSize: 22, fontWeight: '800', marginBottom: 4 },
-  challengeRow: { gap: 12 },
-  challengeCard: { width: 300 },
-  seeAll: { alignSelf: 'flex-end', marginTop: 12 },
-  prompt: { flexDirection: 'row', alignItems: 'center', gap: 14, borderRadius: 16, padding: 16, marginBottom: 16, alignSelf: 'stretch' },
-  promptText: { flex: 1 },
-  promptTitle: { fontSize: 16, fontWeight: '800' },
+  list: { flexGrow: 1 },
+  padded: { paddingHorizontal: SIDE },
+  challengeRow: { gap: 12, paddingHorizontal: SIDE },
+  challengeCard: { width: 290 },
+  seeAll: { alignSelf: 'flex-end', paddingHorizontal: SIDE },
+  prompt: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: SIDE, paddingVertical: 16 },
+  promptText: { flex: 1, gap: 2 },
+  promptTitle: { fontSize: 16, fontWeight: '700' },
   more: { marginVertical: 16 },
-  empty: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20, gap: 6 },
+  // Laid out top to bottom (not centred): centring made tall content spill up over the
+  // streak card when the feed was empty.
+  empty: { alignItems: 'center', paddingVertical: 32, gap: 8 },
   emptyTitle: { fontSize: 18, fontWeight: '700' },
 });

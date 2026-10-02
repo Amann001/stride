@@ -59,9 +59,9 @@ export default function ScanScreen() {
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
   center: { alignItems: 'center', justifyContent: 'center', padding: 32, gap: 12 },
-  title: { fontSize: 20, fontWeight: '800' },
+  title: { fontSize: 20, fontWeight: '700' },
   button: { borderRadius: 999, paddingHorizontal: 24, paddingVertical: 12, marginTop: 8 },
-  buttonText: { color: INK, fontWeight: '800' },
+  buttonText: { color: INK, fontWeight: '700' },
   frame: {
     position: 'absolute', alignSelf: 'center', top: '28%', width: 240, height: 240,
     borderWidth: 4, borderColor: '#C8F31D', borderRadius: 24,

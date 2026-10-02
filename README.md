@@ -102,6 +102,9 @@ cd apps/mobile && npx expo start --no-dev --minify
 In Expo Go, the first screen (app icon and name) is Expo Go's own loading screen and can't be
 changed. A real build (`eas build`) shows Stride's STRIDE splash from the very first frame.
 
+To check layouts in a desktop browser, run `npx expo start --web` in `apps/mobile`. Maps show a
+grey placeholder there (Apple Maps only exists on the phone); everything else works.
+
 ## Roadmap
 
 - [x] **Phase 1:** accounts, GPS recording, activity list and maps (mobile + web)

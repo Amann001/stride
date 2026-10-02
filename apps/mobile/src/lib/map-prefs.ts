@@ -1,6 +1,7 @@
 import type { HeatmapKind } from '@repo/shared';
-import * as SecureStore from 'expo-secure-store';
 import { useSyncExternalStore } from 'react';
+
+import { storage } from '@/lib/storage';
 
 // How the Maps tab looks: map style, which heatmap is on, and extra layers. Saved on the
 // phone so the map looks the same next time you open the app.
@@ -21,7 +22,7 @@ let prefs: MapPrefs = DEFAULTS;
 const listeners = new Set<() => void>();
 
 // Load saved settings once, at startup.
-SecureStore.getItemAsync(KEY)
+storage.get(KEY)
   .then((saved) => {
     if (saved) {
       prefs = { ...DEFAULTS, ...JSON.parse(saved) };
@@ -33,7 +34,7 @@ SecureStore.getItemAsync(KEY)
 export function updateMapPrefs(change: Partial<MapPrefs>) {
   prefs = { ...prefs, ...change };
   for (const l of listeners) l();
-  SecureStore.setItemAsync(KEY, JSON.stringify(prefs)).catch(() => {});
+  storage.set(KEY, JSON.stringify(prefs)).catch(() => {});
 }
 
 export function useMapPrefs(): MapPrefs {

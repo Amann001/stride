@@ -95,7 +95,7 @@ export function ActivitySocial({ activity, autoFocusComment = false }: { activit
 
       <View style={styles.inputRow}>
         <TextInput
-          style={[styles.input, { color: colors.text, backgroundColor: colors.background }]}
+          style={[styles.input, { color: colors.text, backgroundColor: colors.raised }]}
           placeholder="Add a comment…"
           placeholderTextColor={colors.textSecondary}
           value={draft}
@@ -117,7 +117,7 @@ export function ActivitySocial({ activity, autoFocusComment = false }: { activit
 }
 
 const styles = StyleSheet.create({
-  card: { padding: 20, gap: 14 },
+  card: { paddingHorizontal: 16, paddingVertical: 18, gap: 14 },
   kudosRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
   kudosText: { flex: 1, gap: 6 },
   faces: { flexDirection: 'row', alignItems: 'center' },
