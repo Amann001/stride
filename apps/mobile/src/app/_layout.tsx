@@ -1,10 +1,11 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { Animated, StyleSheet, useColorScheme, View } from 'react-native';
+import { Animated, AppState, StyleSheet, useColorScheme, View } from 'react-native';
 
 import { BrandSplash } from '@/components/brand-splash';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { uploadPending } from '@/lib/pending-activities';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,6 +29,18 @@ function RootNavigator() {
     const timer = setTimeout(() => setMinTimePassed(true), MIN_INTRO_MS);
     return () => clearTimeout(timer);
   }, []);
+
+  // Upload any activities that were saved on the phone while offline: when you log in or
+  // open the app, and whenever the app comes back to the front.
+  const loggedIn = !!user;
+  useEffect(() => {
+    if (!loggedIn) return;
+    uploadPending().catch(() => {});
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') uploadPending().catch(() => {});
+    });
+    return () => sub.remove();
+  }, [loggedIn]);
 
   // Once login state is known and the minimum time is up, fade the intro out.
   useEffect(() => {

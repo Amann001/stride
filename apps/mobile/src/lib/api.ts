@@ -49,24 +49,75 @@ export function setAuthToken(token: string | null) {
 export class ApiError extends Error {
   constructor(
     message: string,
+    // HTTP status, or 0 when the server couldn't be reached at all (no signal, timeout).
     public status: number,
   ) {
     super(message);
   }
 }
 
+// True when the request never reached the server (offline, timed out), as opposed to the
+// server answering with an error. Safe to keep the data and try again later.
+export function isConnectionError(err: unknown): boolean {
+  return err instanceof ApiError && err.status === 0;
+}
+
+// Render's free server sleeps after 15 idle minutes and takes up to a minute to wake, so a
+// single attempt gets a generous limit, and reads (GET) quietly try again a couple of times.
+const TIMEOUT_MS = 45_000;
+const GET_RETRIES = 2;
+
+async function attempt(path: string, init: RequestInit): Promise<Response> {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, TIMEOUT_MS);
+  try {
+    return await fetch(`${API_URL}${path}`, { ...init, signal: controller.signal });
+  } catch {
+    throw new ApiError(
+      timedOut
+        ? 'Stride is taking longer than usual to respond. Please try again in a moment.'
+        : "Can't reach Stride. Check your internet connection and try again.",
+      0,
+    );
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 async function request<T>(path: string, options: { method?: string; body?: unknown } = {}): Promise<T> {
-  const res = await fetch(`${API_URL}${path}`, {
-    method: options.method ?? 'GET',
+  const method = options.method ?? 'GET';
+  const init: RequestInit = {
+    method,
     headers: {
       ...(options.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
       ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
     },
     body: options.body !== undefined ? JSON.stringify(options.body) : undefined,
-  });
-  if (res.status === 204) return undefined as T;
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new ApiError(data.error ?? `Request failed (${res.status})`, res.status);
+  };
+  // Only reads are retried automatically: repeating a save could otherwise do it twice.
+  const tries = method === 'GET' ? 1 + GET_RETRIES : 1;
+  let res: Response | undefined;
+  for (let i = 0; i < tries; i++) {
+    try {
+      res = await attempt(path, init);
+      // 502/503/504 = the server is restarting or waking up; worth another go for reads.
+      if (i < tries - 1 && res.status >= 502 && res.status <= 504) {
+        await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+        continue;
+      }
+      break;
+    } catch (err) {
+      if (i === tries - 1) throw err;
+      await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
+    }
+  }
+  if (res!.status === 204) return undefined as T;
+  const data = await res!.json().catch(() => ({}));
+  if (!res!.ok) throw new ApiError(data.error ?? `Something went wrong (${res!.status}). Please try again.`, res!.status);
   return data as T;
 }
 

@@ -1,7 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import type { ActivitySummary, AthleteSummary, Challenge, UserStats } from '@repo/shared';
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ActivityIndicator, FlatList, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { ActivityCard } from '@/components/activity-card';
@@ -13,6 +13,7 @@ import { WhoToFollow } from '@/components/who-to-follow';
 import { useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { onPendingUploaded, uploadPending } from '@/lib/pending-activities';
 import { useBadges } from '@/lib/use-badges';
 
 // Home tab: your streak and week at the top, then a feed of your activities and those of
@@ -51,8 +52,12 @@ export default function HomeScreen() {
     }, [load]),
   );
 
+  // An activity saved on the phone while offline just finished uploading: show it.
+  useEffect(() => onPendingUploaded(load), [load]);
+
   const onRefresh = async () => {
     setRefreshing(true);
+    await uploadPending().catch(() => 0);
     await load();
     setRefreshing(false);
   };
@@ -138,6 +143,11 @@ export default function HomeScreen() {
         contentContainerStyle={styles.list}
         data={feed}
         keyExtractor={(a) => a.id}
+        // Every card holds a live map, which is heavy: build a few at a time and keep only
+        // the cards near the screen alive, so scrolling stays smooth.
+        initialNumToRender={3}
+        maxToRenderPerBatch={3}
+        windowSize={5}
         ItemSeparatorComponent={Band}
         renderItem={({ item, index }) => (
           <>

@@ -85,3 +85,12 @@ export async function findActivity(id: string, viewerId: string, withPoints = fa
   );
   return rows[0] ?? null;
 }
+
+// The id of the user's activity saved with this phone-made tag, if any (see createActivitySchema.clientId).
+export async function findByClientId(userId: string, clientId: string): Promise<string | null> {
+  const { rows } = await pool.query<{ id: string }>(
+    'SELECT id FROM activities WHERE user_id = $1 AND client_id = $2',
+    [userId, clientId],
+  );
+  return rows[0]?.id ?? null;
+}
