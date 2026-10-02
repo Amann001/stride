@@ -1,3 +1,4 @@
+import { CATEGORIES } from './categories';
 import type { ActivityType, TrackPoint } from './schemas';
 
 const EARTH_RADIUS_M = 6_371_000;
@@ -13,7 +14,7 @@ export function distanceBetween(a: { lat: number; lng: number }, b: { lat: numbe
 }
 
 // Below this speed (m/s) we treat you as standing still, e.g. waiting at a traffic light.
-const MOVING_SPEED_THRESHOLD = 0.5;
+export const MOVING_SPEED_THRESHOLD = 0.5;
 
 // Phone GPS altitude wobbles by several meters even on flat ground. We average it over
 // ±20 seconds, then only count a climb once it rises at least 5 m. Tested on a real flat
@@ -21,15 +22,12 @@ const MOVING_SPEED_THRESHOLD = 0.5;
 const ELEVATION_SMOOTHING_SEC = 20;
 const ELEVATION_NOISE_M = 5;
 
-// Fastest believable speed for each activity, in km/h. A GPS point that would mean moving
-// faster than this since the last good point is a glitch and gets dropped.
-const MAX_SPEED_KMH: Record<ActivityType, number> = { walk: 15, hike: 15, run: 40, ride: 100 };
-
-// True if going from `prev` to `next` would need an impossible speed for this activity.
+// True if going from `prev` to `next` would need an impossible speed for this activity
+// (see `maxSpeedKmh` in categories.ts). Such a point is a GPS glitch and gets dropped.
 export function isGpsJump(prev: TrackPoint, next: TrackPoint, type: ActivityType): boolean {
   const dt = (next.t - prev.t) / 1000;
   if (dt <= 0) return true;
-  return (distanceBetween(prev, next) / dt) * 3.6 > MAX_SPEED_KMH[type];
+  return (distanceBetween(prev, next) / dt) * 3.6 > CATEGORIES[type].maxSpeedKmh;
 }
 
 // Removes GPS glitches from a track, keeping points in time order.
@@ -43,7 +41,7 @@ export function cleanTrack(points: TrackPoint[], type: ActivityType): TrackPoint
 }
 
 // Total climbing in meters, from smoothed altitude readings.
-function elevationGain(points: TrackPoint[]): number {
+export function elevationGain(points: TrackPoint[]): number {
   const alts = points.filter((p): p is TrackPoint & { alt: number } => p.alt != null);
   if (alts.length < 2) return 0;
   // Moving average over a time window, using two pointers so long tracks stay fast.

@@ -8,11 +8,13 @@ interface Props {
   coords: { lat: number; lng: number }[];
   // When true, the map follows the last point (used while recording).
   follow?: boolean;
+  // When true, the map is a still picture (used in the feed) so it doesn't catch scrolls and taps.
+  preview?: boolean;
   style?: StyleProp<ViewStyle>;
 }
 
 // Draws a route as a lime line on Apple Maps, with start and end markers.
-export function RouteMap({ coords, follow = false, style }: Props) {
+export function RouteMap({ coords, follow = false, preview = false, style }: Props) {
   const mapRef = useRef<MapView>(null);
   const line = coords.map((c) => ({ latitude: c.lat, longitude: c.lng }));
   const first = line[0];
@@ -33,6 +35,11 @@ export function RouteMap({ coords, follow = false, style }: Props) {
       showsUserLocation={follow}
       followsUserLocation={follow}
       onMapReady={fit}
+      pointerEvents={preview ? 'none' : 'auto'}
+      scrollEnabled={!preview}
+      zoomEnabled={!preview}
+      rotateEnabled={!preview}
+      pitchEnabled={!preview}
       initialRegion={
         first ? { latitude: first.latitude, longitude: first.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 } : undefined
       }>
