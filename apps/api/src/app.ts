@@ -7,7 +7,10 @@ import { config } from './config';
 import { activityRoutes } from './routes/activities';
 import { authRoutes } from './routes/auth';
 import { challengeRoutes } from './routes/challenges';
+import { clubRoutes } from './routes/clubs';
 import { heatmapRoutes, routeRoutes } from './routes/maps';
+import { messageRoutes } from './routes/messages';
+import { socialRoutes } from './routes/social';
 import { statsRoutes } from './routes/stats';
 
 // Tell TypeScript what we put inside login tokens.
@@ -60,6 +63,9 @@ export async function buildApp() {
   await app.register(challengeRoutes);
   await app.register(routeRoutes);
   await app.register(heatmapRoutes);
+  await app.register(socialRoutes);
+  await app.register(messageRoutes);
+  await app.register(clubRoutes);
 
   return app;
 }
