@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Tex
 import { ActivityCard } from '@/components/activity-card';
 import { Avatar } from '@/components/avatar';
 import { FollowButton } from '@/components/follow-button';
+import { Band, Section, SectionHeader } from '@/components/section';
 import { useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 
@@ -56,7 +57,7 @@ export default function AthleteScreen() {
   ];
 
   return (
-    <ScrollView style={{ backgroundColor: colors.background }} contentContainerStyle={styles.content}>
+    <ScrollView style={{ backgroundColor: colors.separator }} contentContainerStyle={styles.content}>
       <Stack.Screen
         options={{
           title: athlete.name,
@@ -68,6 +69,7 @@ export default function AthleteScreen() {
           ),
         }}
       />
+      <View style={[styles.header, { backgroundColor: colors.card }]}>
       <View style={styles.top}>
         <Avatar id={athlete.id} name={athlete.name} size={84} />
         <View style={styles.topText}>
@@ -119,7 +121,7 @@ export default function AthleteScreen() {
         </View>
       )}
 
-      <View style={[styles.card, { backgroundColor: colors.card }]}>
+      <View style={[styles.card, { borderColor: colors.border }]}>
         <View style={styles.stat}>
           <Text style={{ color: colors.textSecondary, fontSize: 12 }}>This week</Text>
           <Text style={[styles.statValue, { color: colors.text }]}>{formatDistance(athlete.weekDistanceMeters)}</Text>
@@ -130,35 +132,45 @@ export default function AthleteScreen() {
         </View>
       </View>
 
-      <Text style={[styles.section, { color: colors.text }]}>Activities</Text>
-      {activities.length ? (
-        activities.map((a) => <ActivityCard key={a.id} activity={a} />)
-      ) : (
-        <Text style={{ color: colors.textSecondary }}>
-          {athlete.isFollowing || athlete.isMe ? 'No activities yet.' : `Follow ${athlete.name} to see activities they share with followers.`}
-        </Text>
-      )}
+      </View>
+
+      <Band />
+      <Section>
+        <SectionHeader title="Activities" />
+        {!activities.length && (
+          <Text style={{ color: colors.textSecondary }}>
+            {athlete.isFollowing || athlete.isMe ? 'No activities yet.' : `Follow ${athlete.name} to see activities they share with followers.`}
+          </Text>
+        )}
+      </Section>
+      {activities.map((a) => (
+        <View key={a.id}>
+          <Band height={1} />
+          <ActivityCard activity={a} />
+        </View>
+      ))}
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   center: { marginTop: 48, textAlign: 'center' },
-  content: { padding: 16, gap: 14, paddingBottom: 40 },
+  content: { paddingBottom: 40 },
+  header: { padding: 16, gap: 14 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 16 },
   topText: { flex: 1, gap: 4 },
-  name: { fontSize: 24, fontWeight: '800' },
+  name: { fontSize: 24, fontWeight: '700' },
   location: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   bio: { fontSize: 15, lineHeight: 21 },
   counts: { flexDirection: 'row', gap: 28 },
   count: { gap: 2 },
-  countValue: { fontSize: 18, fontWeight: '800' },
+  countValue: { fontSize: 18, fontWeight: '700' },
   buttons: { flexDirection: 'row', gap: 10 },
   flex: { flex: 1 },
   outline: { borderWidth: 1, borderRadius: 999, paddingVertical: 9, alignItems: 'center', justifyContent: 'center' },
   messageRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  card: { borderRadius: 16, padding: 16, flexDirection: 'row' },
+  card: { flexDirection: 'row', paddingTop: 14, borderTopWidth: StyleSheet.hairlineWidth },
   stat: { flex: 1, gap: 2 },
-  statValue: { fontSize: 20, fontWeight: '800' },
-  section: { fontSize: 20, fontWeight: '800', marginTop: 6 },
+  statValue: { fontSize: 20, fontWeight: '700' },
+  section: { fontSize: 20, fontWeight: '700', marginTop: 6 },
 });

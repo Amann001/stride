@@ -60,7 +60,7 @@ export function EditActivitySheet({ activity, visible, onClose, onSaved }: {
     }
   };
 
-  const input = [styles.input, { backgroundColor: colors.card, borderColor: colors.border, color: colors.text }];
+  const input = [styles.input, { backgroundColor: colors.raised, borderColor: colors.border, color: colors.text }];
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -113,7 +113,7 @@ const styles = StyleSheet.create({
   label: { fontSize: 13, fontWeight: '600', marginTop: 4 },
   input: { borderWidth: 1, borderRadius: 12, paddingHorizontal: 14, paddingVertical: 12, fontSize: 16 },
   multiline: { minHeight: 100, textAlignVertical: 'top' },
-  section: { fontSize: 18, fontWeight: '800', marginTop: 16 },
+  section: { fontSize: 18, fontWeight: '700', marginTop: 16 },
   option: { flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1.5, borderRadius: 14, padding: 12 },
   optionIcon: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center' },
   optionText: { flex: 1 },

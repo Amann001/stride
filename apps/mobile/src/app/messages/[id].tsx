@@ -129,7 +129,7 @@ export default function ChatScreen() {
                 )}
                 <View style={[styles.bubble, mine
                   ? [styles.mine, { backgroundColor: colors.brand, opacity: item.kind === 'pending' && !item.failed ? 0.6 : 1 }]
-                  : [styles.theirs, { backgroundColor: colors.card }]]}>
+                  : [styles.theirs, { backgroundColor: colors.raised }]]}>
                   <Text style={{ color: mine ? INK : colors.text, fontSize: 16 }}>{body}</Text>
                 </View>
                 {item.kind === 'pending' && item.failed && (
@@ -144,7 +144,7 @@ export default function ChatScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               {otherId && <Avatar id={otherId} name={name ?? '?'} size={72} />}
-              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '800' }}>{name}</Text>
+              <Text style={{ color: colors.text, fontSize: 18, fontWeight: '700' }}>{name}</Text>
               <Text style={{ color: colors.textSecondary }}>Say hi and plan your next run together.</Text>
             </View>
           }
@@ -152,7 +152,7 @@ export default function ChatScreen() {
       )}
       <View style={[styles.inputBar, { borderColor: colors.border, backgroundColor: colors.card, paddingBottom: insets.bottom + 8 }]}>
         <TextInput
-          style={[styles.input, { color: colors.text, backgroundColor: colors.background }]}
+          style={[styles.input, { color: colors.text, backgroundColor: colors.raised }]}
           value={draft}
           onChangeText={setDraft}
           placeholder="Message"

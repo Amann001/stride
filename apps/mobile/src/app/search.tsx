@@ -146,7 +146,7 @@ function Friends() {
 
           {view === 'contacts' && <InviteContacts />}
           {view === 'qr' && user && (
-            <View style={[styles.qrCard, { backgroundColor: colors.card }]}>
+            <View style={[styles.qrCard, { backgroundColor: colors.raised }]}>
               <Text style={[styles.qrTitle, { color: colors.text }]}>{user.name}</Text>
               <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
                 Friends can scan this in Stride to find and follow you.
@@ -203,7 +203,7 @@ function InviteContacts() {
   };
 
   return (
-    <View style={[styles.qrCard, { backgroundColor: colors.card }]}>
+    <View style={[styles.qrCard, { backgroundColor: colors.raised }]}>
       <MaterialCommunityIcons name="card-account-phone-outline" size={48} color={colors.accent} />
       <Text style={[styles.qrTitle, { color: colors.text }]}>Invite from your contacts</Text>
       <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
@@ -271,7 +271,7 @@ function Clubs() {
 function SearchBox({ value, onChange, placeholder }: { value: string; onChange: (s: string) => void; placeholder: string }) {
   const colors = useColors();
   return (
-    <View style={[styles.search, { backgroundColor: colors.card }]}>
+    <View style={[styles.search, { backgroundColor: colors.raised }]}>
       <MaterialCommunityIcons name="magnify" size={20} color={colors.textSecondary} />
       <TextInput style={[styles.searchInput, { color: colors.text }]} value={value} onChangeText={onChange}
         placeholder={placeholder} placeholderTextColor={colors.textSecondary} autoCorrect={false} returnKeyType="search" />
@@ -304,15 +304,15 @@ const styles = StyleSheet.create({
   views: { flexDirection: 'row', marginBottom: 8 },
   viewTab: { flex: 1, alignItems: 'center', gap: 2, paddingVertical: 8, borderBottomWidth: 2, borderBottomColor: 'transparent' },
   listHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 },
-  caps: { fontSize: 12, fontWeight: '800', letterSpacing: 0.5 },
+  caps: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   smallButton: { borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 5, minWidth: 80, alignItems: 'center' },
   note: { textAlign: 'center', marginTop: 24 },
   loading: { marginTop: 32 },
   qrCard: { borderRadius: 16, padding: 20, alignItems: 'center', gap: 12, marginTop: 8 },
-  qrTitle: { fontSize: 20, fontWeight: '800' },
+  qrTitle: { fontSize: 20, fontWeight: '700' },
   qrBox: { padding: 14, backgroundColor: '#FFFFFF', borderRadius: 16 },
   primary: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, borderRadius: 999, paddingVertical: 12, paddingHorizontal: 22, alignSelf: 'stretch' },
-  primaryText: { color: INK, fontWeight: '800', fontSize: 15 },
+  primaryText: { color: INK, fontWeight: '700', fontSize: 15 },
   invite: { alignItems: 'center', gap: 10, marginTop: 28 },
   clubFilters: { flexDirection: 'row', gap: 8, marginBottom: 8 },
   chip: { flexDirection: 'row', alignItems: 'center', gap: 6, borderWidth: 1, borderRadius: 999, paddingHorizontal: 12, paddingVertical: 7 },

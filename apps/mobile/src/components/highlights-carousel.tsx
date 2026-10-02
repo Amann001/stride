@@ -6,25 +6,23 @@ import { StreakCard } from '@/components/streak-card';
 import { WeekSummary } from '@/components/week-summary';
 import { useColors } from '@/constants/theme';
 
-const SIDE_PADDING = 12;
-
-// The swipeable cards at the top of Home: your streak, then this week's totals.
+// The swipeable panel at the top of Home, like Strava's: your streak, then this week's
+// totals, with page dots underneath.
 export function HighlightsCarousel({ stats }: { stats: UserStats | null }) {
   const colors = useColors();
   const { width } = useWindowDimensions();
-  const pageWidth = width - SIDE_PADDING * 2;
   const [page, setPage] = useState(0);
   const pages: ReactNode[] = [<StreakCard key="streak" stats={stats} />, <WeekSummary key="week" stats={stats} />];
 
   return (
-    <View>
+    <View style={[styles.wrap, { backgroundColor: colors.card }]}>
       <ScrollView
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
-        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / pageWidth))}>
+        onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / width))}>
         {pages.map((p, i) => (
-          <View key={i} style={{ width: pageWidth }}>
+          <View key={i} style={{ width }}>
             {p}
           </View>
         ))}
@@ -39,6 +37,7 @@ export function HighlightsCarousel({ stats }: { stats: UserStats | null }) {
 }
 
 const styles = StyleSheet.create({
-  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6, marginTop: 10 },
-  dot: { width: 7, height: 7, borderRadius: 4 },
+  wrap: { paddingBottom: 12 },
+  dots: { flexDirection: 'row', justifyContent: 'center', gap: 6 },
+  dot: { width: 6, height: 6, borderRadius: 3 },
 });
