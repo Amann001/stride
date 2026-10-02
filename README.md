@@ -103,10 +103,40 @@ project owner, open
 `exp://u.expo.dev/4e419f43-5433-41ca-be3d-8ac8867a9622?runtime-version=exposdk%3A57.0.0&channel-name=production`.
 Expo Go then keeps Stride in its recently opened list.
 
-**Publish app changes** (after committing them):
+**Publish app changes** (after committing them), to iPhone (Expo Go) and Android:
 ```bash
 npm run publish:app
 ```
+
+**Android app** (a real app with the Stride icon, installed from a link, not the Play Store):
+```bash
+npm run build:android
+```
+Builds an APK on Expo's free build service (profile `android-apk` in `apps/mobile/eas.json`).
+The finished build has a download link and QR code on expo.dev. Only rebuild when native
+code changes (new native packages, app.json permissions or icons); everything else reaches
+installed apps through `npm run publish:app`.
+
+- Maps on Android use MapLibre with free OpenFreeMap tiles (no account or key). iPhone uses
+  Apple Maps. Each map is a component with an `.android.tsx` twin (`route-map`,
+  `maps-tab-map`, `create-route-map`); keep both in step.
+- Android has no `Alert.prompt`; use `promptText()` from `components/text-prompt.tsx`.
+- Google plans to require developer verification for apps installed outside the Play Store;
+  it starts outside India first (expected in India in 2027).
+
+## Safety and privacy
+
+- **Privacy zone:** other people never see the first and last 200 m of a route (maps, feed,
+  clubs, activity detail, shared heatmap). See `hideEnds` in `packages/shared/src/geo.ts`.
+- **Block and report:** ⋯ on a profile or chat. Blocks apply in both directions everywhere
+  (see `noBlockBetween` in `apps/api/src/activity-sql.ts`). Reports go to the `reports`
+  table; review them in the Neon console (`SELECT * FROM reports WHERE status = 'open'`).
+- **Delete account:** You → Settings → Delete Account (asks for the password). Erases the
+  account and everything linked to it.
+- **Rate limits** on login, sign-up and account deletion.
+- **Privacy policy and terms:** served by the API at `/privacy` and `/terms`. To show a
+  contact address in them, set `CONTACT_EMAIL` on Render (use a dedicated address, not a
+  personal one). Update these pages whenever the app starts collecting something new.
 The published app gets the API address from the `EXPO_PUBLIC_API_URL` variable in the EAS
 `production` environment (not from `.env.production`, which only local `expo export` uses).
 
