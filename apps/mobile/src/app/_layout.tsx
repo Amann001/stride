@@ -97,6 +97,7 @@ function RootNavigator() {
             <Stack.Screen name="blocked" options={{ title: 'Blocked People', headerBackTitle: 'Back' }} />
             <Stack.Screen name="delete-account" options={{ title: 'Delete Account', headerBackTitle: 'Back' }} />
             <Stack.Screen name="change-password" options={{ title: 'Change Password', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="change-email" options={{ title: 'Change Email', headerBackTitle: 'Back' }} />
           </Stack.Protected>
           <Stack.Protected guard={!user}>
             <Stack.Screen name="login" options={{ headerShown: false }} />

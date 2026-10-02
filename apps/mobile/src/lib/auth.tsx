@@ -20,6 +20,8 @@ interface AuthState {
   updateProfile: (input: { name: string; bio?: string; location?: string }) => Promise<void>;
   // Logs out every other phone; this one stays signed in with a fresh login.
   changePassword: (currentPassword: string, newPassword: string) => Promise<void>;
+  // Change email, step 2: the code sent to the new address. Logs out every other phone.
+  confirmEmailChange: (code: string) => Promise<void>;
   // "Forgot password": the emailed code plus a new password signs you in.
   resetPassword: (email: string, code: string, newPassword: string) => Promise<void>;
 }
@@ -90,6 +92,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       signOut: forgetLogin,
       updateProfile: async (input) => keepUser(await api.updateProfile(input)),
       changePassword: async (current, next) => finishLogin(await api.changePassword(current, next)),
+      confirmEmailChange: async (code) => finishLogin(await api.confirmEmailChange(code)),
       resetPassword: async (email, code, next) => finishLogin(await api.resetPassword(email, code, next)),
     }),
     [user, loading, finishLogin, forgetLogin, keepUser],

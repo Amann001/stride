@@ -197,6 +197,9 @@ export const api = {
   deleteAccount: (password: string) => request<void>('/me', { method: 'DELETE', body: { password } }),
   changePassword: (currentPassword: string, newPassword: string) =>
     request<AuthResponse>('/me/password', { method: 'POST', body: { currentPassword, newPassword } }),
+  startEmailChange: (newEmail: string, password: string) =>
+    request<{ ok: true }>('/me/email', { method: 'POST', body: { newEmail, password } }),
+  confirmEmailChange: (code: string) => request<AuthResponse>('/me/email/confirm', { method: 'POST', body: { code } }),
   forgotPassword: (email: string) => request<{ ok: true }>('/auth/forgot-password', { method: 'POST', body: { email } }),
   resetPassword: (email: string, code: string, newPassword: string) =>
     request<AuthResponse>('/auth/reset-password', { method: 'POST', body: { email, code, newPassword } }),

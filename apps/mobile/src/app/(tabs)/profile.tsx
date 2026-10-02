@@ -330,6 +330,7 @@ function More({ stats, trophies, activities, onLogOut }: {
         <Text style={[styles.cardTitle, { color: colors.text }]}>Settings</Text>
         <SettingRow label="Units of Measurement" value="Metric" />
         {__DEV__ && <SettingRow label="Server" value={API_URL} />}
+        <LinkRow label="Change Email" onPress={() => router.push('/change-email')} />
         <LinkRow label="Change Password" onPress={() => router.push('/change-password')} />
         <LinkRow label="Blocked People" onPress={() => router.push('/blocked')} />
         <LinkRow label="Privacy Policy" onPress={() => WebBrowser.openBrowserAsync(privacyUrl())} />

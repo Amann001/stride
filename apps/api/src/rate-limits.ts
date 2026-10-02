@@ -31,6 +31,8 @@ export const LIMITS = {
   signup: perIp(5, '1 hour'),
   passwordReset: perIp(5, '1 hour'),
   passwordResetCode: perIp(10, '15 minutes'),
+  emailChange: perAccount(5, '1 hour'),
+  emailChangeCode: perAccount(10, '15 minutes'),
   comment: perAccount(20, '1 minute'),
   message: perAccount(30, '1 minute'),
   newConversation: perAccount(15, '1 hour'),

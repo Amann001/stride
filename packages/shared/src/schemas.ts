@@ -31,6 +31,15 @@ export const resetPasswordSchema = z.object({
   newPassword,
 });
 
+// Changing your email: your password plus the new address, then the code sent to it.
+export const changeEmailStartSchema = z.object({
+  newEmail: z.email('Enter a valid email address').transform((e) => e.toLowerCase()),
+  password: z.string().min(1, 'Enter your password'),
+});
+export const changeEmailConfirmSchema = z.object({
+  code: z.string().trim().regex(/^\d{6}$/, 'The code is 6 digits'),
+});
+
 // A crash or error from the app, for fixing bugs. No personal data.
 export const errorReportSchema = z.object({
   message: z.string().max(2000),
