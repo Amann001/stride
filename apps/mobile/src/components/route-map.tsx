@@ -10,13 +10,16 @@ interface Props {
   follow?: boolean;
   // When true, the map is a still picture (used in the feed) so it doesn't catch scrolls and taps.
   preview?: boolean;
+  // A route to follow, drawn faintly underneath (used while recording).
+  guide?: { lat: number; lng: number }[];
   style?: StyleProp<ViewStyle>;
 }
 
 // Draws a route as a lime line on Apple Maps, with start and end markers.
-export function RouteMap({ coords, follow = false, preview = false, style }: Props) {
+export function RouteMap({ coords, follow = false, preview = false, guide, style }: Props) {
   const mapRef = useRef<MapView>(null);
   const line = coords.map((c) => ({ latitude: c.lat, longitude: c.lng }));
+  const guideLine = guide?.map((c) => ({ latitude: c.lat, longitude: c.lng })) ?? [];
   const first = line[0];
   const last = line[line.length - 1];
 
@@ -43,6 +46,10 @@ export function RouteMap({ coords, follow = false, preview = false, style }: Pro
       initialRegion={
         first ? { latitude: first.latitude, longitude: first.longitude, latitudeDelta: 0.01, longitudeDelta: 0.01 } : undefined
       }>
+      {guideLine.length > 1 && (
+        <Polyline coordinates={guideLine} strokeColor="rgba(56,189,248,0.75)" strokeWidth={6} lineDashPattern={[1, 8]} lineCap="round" />
+      )}
+      {guideLine.length > 1 && <Marker coordinate={guideLine[0]} pinColor="green" title="Route start" />}
       {/* A dark outline under the lime line keeps the route visible on light maps. */}
       {line.length > 1 && <Polyline coordinates={line} strokeColor={INK} strokeWidth={7} />}
       {line.length > 1 && <Polyline coordinates={line} strokeColor={LIME} strokeWidth={4} />}

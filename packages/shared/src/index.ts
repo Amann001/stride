@@ -5,3 +5,4 @@ export * from './format';
 export * from './categories';
 export * from './analysis';
 export * from './challenges';
+export * from './routes';

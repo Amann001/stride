@@ -1,6 +1,6 @@
 import type { Achievement, BestEffort } from './analysis';
 import type { Challenge } from './challenges';
-import type { ActivityType, TrackPoint } from './schemas';
+import type { ActivityType, TrackPoint, Visibility } from './schemas';
 
 // The shapes the API sends back. Both apps import these so they always agree.
 
@@ -35,6 +35,7 @@ export interface ActivitySummary {
   bestEfforts: BestEffort[];
   // Worked out when the activity was saved, compared with your earlier ones.
   achievements: Achievement[];
+  visibility: Visibility;
   // Encoded route line (Google polyline format), enough to draw a small map.
   polyline: string;
   createdAt: string;
