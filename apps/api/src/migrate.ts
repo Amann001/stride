@@ -12,7 +12,23 @@ import { pool } from './db';
 
 const migrationsDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'migrations');
 
+// Neon's free database may be waking up when the server starts, so the first connection
+// can fail. Try a few times before giving up (each migration is all-or-nothing anyway).
+async function waitForDatabase() {
+  for (let attempt = 1; ; attempt++) {
+    try {
+      await pool.query('SELECT 1');
+      return;
+    } catch (err) {
+      if (attempt >= 5) throw err;
+      console.warn(`Database not ready (attempt ${attempt}), retrying...`);
+      await new Promise((r) => setTimeout(r, attempt * 2000));
+    }
+  }
+}
+
 async function main() {
+  await waitForDatabase();
   await pool.query(`
     CREATE TABLE IF NOT EXISTS schema_migrations (
       name       text PRIMARY KEY,

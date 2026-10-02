@@ -19,6 +19,7 @@ import type { FastifyInstance, FastifyRequest } from 'fastify';
 import { z } from 'zod';
 
 import { pool } from '../db';
+import { LIMITS } from '../rate-limits';
 import { EMPTY_TILE, renderTile, tileBounds } from '../heatmap';
 import { elevationAlong, loopRoute, routeThrough, RoutingError, straightLine, toPolyline, TtlCache } from '../routing';
 
@@ -89,7 +90,7 @@ export async function routeRoutes(app: FastifyInstance) {
   app.addHook('onRequest', app.authenticate);
 
   // Loops that start and end where you are, e.g. three running routes of 2, 5 and 8 km.
-  app.post('/routes/suggest', async (req, reply) => {
+  app.post('/routes/suggest', { config: { rateLimit: LIMITS.routePlanning } }, async (req, reply) => {
     const input = suggestRoutesSchema.parse(req.body);
     const userId = req.user.sub;
     const running = suggestionsInFlight.get(userId) ?? 0;
@@ -145,7 +146,7 @@ export async function routeRoutes(app: FastifyInstance) {
   });
 
   // A route through the points you tapped, following roads and paths (or straight lines).
-  app.post('/routes/plan', async (req, reply): Promise<PlannedRoute | undefined> => {
+  app.post('/routes/plan', { config: { rateLimit: LIMITS.routePlanning } }, async (req, reply): Promise<PlannedRoute | undefined> => {
     const input = planRouteSchema.parse(req.body);
     try {
       const route = input.snap ? await routeThrough(input.sport, input.waypoints) : straightLine(input.waypoints);
@@ -158,7 +159,7 @@ export async function routeRoutes(app: FastifyInstance) {
 
   // Save a route (a suggestion you liked, or one you drew). We work out its length and
   // climbing ourselves from the line.
-  app.post('/routes', async (req, reply) => {
+  app.post('/routes', { config: { rateLimit: LIMITS.routePlanning } }, async (req, reply) => {
     const input = saveRouteSchema.parse(req.body);
     const coords = decodePolyline(input.polyline);
     if (coords.length < 2) return reply.code(400).send({ error: 'A route needs at least 2 points' });
