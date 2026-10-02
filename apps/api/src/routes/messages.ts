@@ -2,6 +2,7 @@ import { afterSchema, messageSchema, startConversationSchema, type Conversation,
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { noBlockBetween } from '../activity-sql';
 import { pool } from '../db';
 
 // Private one-to-one messages. You can start a chat with someone if either of you follows
@@ -25,9 +26,12 @@ const toMessage = (r: MessageRow): Message => ({
   createdAt: new Date(r.created_at).toISOString(),
 });
 
+// True if you're in the chat and nobody in it has blocked you (or been blocked by you).
 async function isMember(conversationId: string, userId: string): Promise<boolean> {
   const { rowCount } = await pool.query(
-    'SELECT 1 FROM conversation_members WHERE conversation_id = $1 AND user_id = $2',
+    `SELECT 1 FROM conversation_members me WHERE me.conversation_id = $1 AND me.user_id = $2
+       AND NOT EXISTS (SELECT 1 FROM conversation_members o
+         WHERE o.conversation_id = $1 AND o.user_id <> $2 AND NOT ${noBlockBetween('$2', 'o.user_id')})`,
     [conversationId, userId],
   );
   return !!rowCount;
@@ -48,7 +52,7 @@ async function listConversations(userId: string, onlyId?: string): Promise<Conve
      JOIN conversations c ON c.id = me.conversation_id
      JOIN conversation_members o ON o.conversation_id = c.id AND o.user_id <> $1
      JOIN users u ON u.id = o.user_id
-     WHERE me.user_id = $1 AND ($2::uuid IS NULL OR c.id = $2)
+     WHERE me.user_id = $1 AND ($2::uuid IS NULL OR c.id = $2) AND ${noBlockBetween('$1', 'o.user_id')}
      ORDER BY c.last_message_at DESC
      LIMIT 100`,
     [userId, onlyId ?? null],
@@ -72,6 +76,8 @@ export async function messageRoutes(app: FastifyInstance) {
     const { athleteId } = startConversationSchema.parse(req.body);
     const me = req.user.sub;
     if (athleteId === me) return reply.code(400).send({ error: "You can't message yourself" });
+    const blocked = await pool.query(`SELECT 1 WHERE NOT ${noBlockBetween('$1', '$2')}`, [me, athleteId]);
+    if (blocked.rowCount) return reply.code(403).send({ error: "You can't message this person" });
 
     const existing = await pool.query<{ id: string }>(
       `SELECT a.conversation_id AS id FROM conversation_members a
@@ -82,7 +88,8 @@ export async function messageRoutes(app: FastifyInstance) {
     if (existing.rows[0]) return (await listConversations(me, existing.rows[0].id))[0];
 
     const allowed = await pool.query(
-      `SELECT 1 FROM follows WHERE (follower_id = $1 AND followee_id = $2) OR (follower_id = $2 AND followee_id = $1)`,
+      `SELECT 1 FROM follows WHERE ((follower_id = $1 AND followee_id = $2) OR (follower_id = $2 AND followee_id = $1))
+         AND ${noBlockBetween('$1', '$2')}`,
       [me, athleteId],
     );
     if (!allowed.rowCount) {

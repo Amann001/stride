@@ -1,4 +1,12 @@
-import type { Achievement, ActivitySummary, ActivityType, BestEffort, TrackPoint, Visibility } from '@repo/shared';
+import {
+  hidePolylineEnds,
+  type Achievement,
+  type ActivitySummary,
+  type ActivityType,
+  type BestEffort,
+  type TrackPoint,
+  type Visibility,
+} from '@repo/shared';
 
 import { pool } from './db';
 
@@ -43,15 +51,24 @@ export function selectActivities(viewer: string, { points = false } = {}): strin
     FROM activities a JOIN users u ON u.id = a.user_id`;
 }
 
-// True when the viewer may see activity `a`: it's theirs, it's public, or it's for
-// followers and they follow the owner.
-export function canSee(viewer: string): string {
-  return `(a.user_id = ${viewer} OR a.visibility = 'everyone'
-    OR (a.visibility = 'followers' AND EXISTS (
-      SELECT 1 FROM follows f WHERE f.follower_id = ${viewer} AND f.followee_id = a.user_id)))`;
+// True when neither user has blocked the other. `x` and `y` are SQL expressions (e.g. '$1', 'u.id').
+export function noBlockBetween(x: string, y: string): string {
+  return `NOT EXISTS (SELECT 1 FROM blocks bl
+    WHERE (bl.blocker_id = ${x} AND bl.blocked_id = ${y}) OR (bl.blocker_id = ${y} AND bl.blocked_id = ${x}))`;
 }
 
-export function toSummary(row: ActivityRow): ActivitySummary {
+// True when the viewer may see activity `a`: it's theirs, or (as long as neither has blocked
+// the other) it's public, or it's for followers and they follow the owner.
+export function canSee(viewer: string): string {
+  return `(a.user_id = ${viewer} OR (${noBlockBetween(viewer, 'a.user_id')} AND (a.visibility = 'everyone'
+    OR (a.visibility = 'followers' AND EXISTS (
+      SELECT 1 FROM follows f WHERE f.follower_id = ${viewer} AND f.followee_id = a.user_id)))))`;
+}
+
+// `viewerId` is who is looking. Anyone other than the owner gets the route without its first
+// and last 200 m (the privacy zone), so nobody can see where an athlete starts from home.
+export function toSummary(row: ActivityRow, viewerId: string): ActivitySummary {
+  const isOwner = row.user_id === viewerId;
   return {
     id: row.id,
     userId: row.user_id,
@@ -68,7 +85,7 @@ export function toSummary(row: ActivityRow): ActivitySummary {
     bestEfforts: row.best_efforts ?? [],
     achievements: row.achievements,
     visibility: row.visibility,
-    polyline: row.polyline,
+    polyline: isOwner ? row.polyline : hidePolylineEnds(row.polyline),
     createdAt: row.created_at.toISOString(),
     athlete: { id: row.user_id, name: row.athlete_name },
     kudosCount: row.kudos_count,

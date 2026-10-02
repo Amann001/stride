@@ -57,7 +57,7 @@ export default function HomeScreen() {
 
   const onRefresh = async () => {
     setRefreshing(true);
-    await uploadPending().catch(() => 0);
+    if (user) await uploadPending(user.id).catch(() => 0);
     await load();
     setRefreshing(false);
   };

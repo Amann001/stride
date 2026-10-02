@@ -1,3 +1,4 @@
+import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import {
   ActivityIndicator,
@@ -13,6 +14,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useColors } from '@/constants/theme';
+import { privacyUrl, termsUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
 
 const LOGO_ON_DARK = require('@/assets/images/logo-on-dark.png');
@@ -84,6 +86,15 @@ export default function LoginScreen() {
           )}
         </Pressable>
 
+        {mode === 'signup' && (
+          <Text style={[styles.legal, { color: colors.textSecondary }]}>
+            By signing up, you confirm you’re 18 or older and agree to the{' '}
+            <Text style={{ color: colors.accent }} onPress={() => WebBrowser.openBrowserAsync(termsUrl())}>Terms of Use</Text>
+            {' '}and{' '}
+            <Text style={{ color: colors.accent }} onPress={() => WebBrowser.openBrowserAsync(privacyUrl())}>Privacy Policy</Text>.
+          </Text>
+        )}
+
         <View style={styles.switchRow}>
           <Text style={{ color: colors.textSecondary }}>
             {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
@@ -107,4 +118,5 @@ const styles = StyleSheet.create({
   button: { borderRadius: 10, paddingVertical: 16, alignItems: 'center', marginTop: 4 },
   buttonText: { fontSize: 16, fontWeight: '700' },
   switchRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 20 },
+  legal: { fontSize: 12, lineHeight: 18, textAlign: 'center', marginTop: 14 },
 });

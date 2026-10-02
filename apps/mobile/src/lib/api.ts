@@ -3,6 +3,7 @@ import type {
   ActivitySummary,
   ActivityType,
   AthleteProfile,
+  AthleteRef,
   AthleteSummary,
   AuthResponse,
   Badges,
@@ -22,10 +23,12 @@ import type {
   RouteSummary,
   SaveRouteInput,
   SuggestRoutesInput,
+  ReportInput,
   UpdateActivityInput,
   User,
   UserStats,
 } from '@repo/shared';
+
 import Constants from 'expo-constants';
 
 // Works out where the API lives.
@@ -40,6 +43,10 @@ function resolveBaseUrl(): string {
 }
 
 export const API_URL = resolveBaseUrl();
+
+// Public pages served by the server: the privacy policy and terms of use.
+export const privacyUrl = () => `${API_URL}/privacy`;
+export const termsUrl = () => `${API_URL}/terms`;
 
 let authToken: string | null = null;
 export function setAuthToken(token: string | null) {
@@ -181,6 +188,12 @@ export const api = {
   badges: () => request<Badges>('/badges'),
   conversations: () => request<Conversation[]>('/conversations'),
   startConversation: (athleteId: string) => request<Conversation>('/conversations', { method: 'POST', body: { athleteId } }),
+  // Safety and your account.
+  blockAthlete: (id: string) => request<void>(`/athletes/${id}/block`, { method: 'POST' }),
+  unblockAthlete: (id: string) => request<void>(`/athletes/${id}/block`, { method: 'DELETE' }),
+  blockedAthletes: () => request<AthleteRef[]>('/me/blocked'),
+  report: (input: ReportInput) => request<{ ok: true }>('/reports', { method: 'POST', body: input }),
+  deleteAccount: (password: string) => request<void>('/me', { method: 'DELETE', body: { password } }),
   messages: (conversationId: string, after?: string) =>
     request<Message[]>(`/conversations/${conversationId}/messages${after ? `?after=${encodeURIComponent(after)}` : ''}`),
   sendMessage: (conversationId: string, body: string) =>

@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Tex
 import { ActivityCard } from '@/components/activity-card';
 import { Avatar } from '@/components/avatar';
 import { FollowButton } from '@/components/follow-button';
+import { SafetyMenu } from '@/components/safety-menu';
 import { Band, Section, SectionHeader } from '@/components/section';
 import { useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
@@ -20,6 +21,7 @@ export default function AthleteScreen() {
   const [activities, setActivities] = useState<ActivitySummary[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [opening, setOpening] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const load = useCallback(() => {
     Promise.all([api.athlete(id), api.athleteActivities(id)]).then(
@@ -62,10 +64,17 @@ export default function AthleteScreen() {
         options={{
           title: athlete.name,
           headerRight: () => (
-            <Pressable hitSlop={10} accessibilityLabel="Share profile"
-              onPress={() => Share.share({ message: `Follow ${athlete.name} on Stride! Search for "${athlete.name}" in the app.` })}>
-              <MaterialCommunityIcons name="export-variant" size={24} color={colors.text} />
-            </Pressable>
+            <View style={styles.headerButtons}>
+              <Pressable hitSlop={10} accessibilityLabel="Share profile"
+                onPress={() => Share.share({ message: `Follow ${athlete.name} on Stride! Search for "${athlete.name}" in the app.` })}>
+                <MaterialCommunityIcons name="export-variant" size={24} color={colors.text} />
+              </Pressable>
+              {!athlete.isMe && (
+                <Pressable hitSlop={10} accessibilityLabel="Report or block" onPress={() => setMenuOpen(true)}>
+                  <MaterialCommunityIcons name="dots-horizontal" size={26} color={colors.text} />
+                </Pressable>
+              )}
+            </View>
           ),
         }}
       />
@@ -104,6 +113,11 @@ export default function AthleteScreen() {
       {athlete.isMe ? (
         <Pressable style={[styles.outline, { borderColor: colors.border }]} onPress={() => router.push('/edit-profile')}>
           <Text style={{ color: colors.text, fontWeight: '700' }}>Edit profile</Text>
+        </Pressable>
+      ) : athlete.blockedByYou ? (
+        <Pressable style={[styles.outline, { borderColor: colors.border }]}
+          onPress={() => api.unblockAthlete(athlete.id).then(load, () => Alert.alert('Could not unblock', 'Please try again.'))}>
+          <Text style={{ color: colors.text, fontWeight: '700' }}>Unblock</Text>
         </Pressable>
       ) : (
         <View style={styles.buttons}>
@@ -149,12 +163,22 @@ export default function AthleteScreen() {
           <ActivityCard activity={a} />
         </View>
       ))}
+      <SafetyMenu
+        visible={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        athleteId={athlete.id}
+        name={athlete.name}
+        blockedByYou={athlete.blockedByYou}
+        // After blocking, leave their profile; after unblocking, show it again.
+        onBlockedChange={(blocked) => (blocked ? router.back() : load())}
+      />
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   center: { marginTop: 48, textAlign: 'center' },
+  headerButtons: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   content: { paddingBottom: 40 },
   header: { padding: 16, gap: 14 },
   top: { flexDirection: 'row', alignItems: 'center', gap: 16 },

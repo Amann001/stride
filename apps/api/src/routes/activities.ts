@@ -1,6 +1,7 @@
 import {
   CATEGORIES,
   cleanTrack,
+  hideEnds,
   computeAchievements,
   createActivitySchema,
   encodePolyline,
@@ -41,7 +42,7 @@ export async function activityRoutes(app: FastifyInstance) {
     const input = createActivitySchema.parse(req.body);
     // Already saved this exact recording (a retried upload)? Return it instead of a duplicate.
     const existingId = input.clientId ? await findByClientId(req.user.sub, input.clientId) : null;
-    if (existingId) return reply.code(200).send(toSummary((await findActivity(existingId, req.user.sub))!));
+    if (existingId) return reply.code(200).send(toSummary((await findActivity(existingId, req.user.sub))!, req.user.sub));
     // Sort by time and drop GPS glitches (impossible jumps) before doing any maths.
     const points = cleanTrack(input.points, input.type);
     if (points.length < 2) {
@@ -86,7 +87,7 @@ export async function activityRoutes(app: FastifyInstance) {
       ],
     );
     const id = rows[0]?.id ?? (await findByClientId(req.user.sub, input.clientId!));
-    return reply.code(rows[0] ? 201 : 200).send(toSummary((await findActivity(id!, req.user.sub))!));
+    return reply.code(rows[0] ? 201 : 200).send(toSummary((await findActivity(id!, req.user.sub))!, req.user.sub));
   });
 
   // Save an activity typed in by hand (e.g. a treadmill run or a ride without the phone).
@@ -118,7 +119,7 @@ export async function activityRoutes(app: FastifyInstance) {
         JSON.stringify(achievements),
       ],
     );
-    return reply.code(201).send(toSummary((await findActivity(rows[0].id, req.user.sub))!));
+    return reply.code(201).send(toSummary((await findActivity(rows[0].id, req.user.sub))!, req.user.sub));
   });
 
   // Your own activities, newest first.
@@ -127,7 +128,7 @@ export async function activityRoutes(app: FastifyInstance) {
       `${selectActivities('$1')} WHERE a.user_id = $1 ORDER BY a.started_at DESC LIMIT 50`,
       [req.user.sub],
     );
-    return rows.map(toSummary);
+    return rows.map((r) => toSummary(r, req.user.sub));
   });
 
   // Any activity you're allowed to see: yours, public ones, and followers-only ones from
@@ -136,7 +137,12 @@ export async function activityRoutes(app: FastifyInstance) {
     const { id } = idParams.parse(req.params);
     const row = await findActivity(id, req.user.sub, true);
     if (!row) return reply.code(404).send({ error: 'Activity not found' });
-    const detail: ActivityDetail = { ...toSummary(row), points: row.points ?? [] };
+    // Other people get the track without its first and last 200 m (privacy zone).
+    const points = row.points ?? [];
+    const detail: ActivityDetail = {
+      ...toSummary(row, req.user.sub),
+      points: row.user_id === req.user.sub ? points : hideEnds(points),
+    };
     return detail;
   });
 
@@ -153,7 +159,7 @@ export async function activityRoutes(app: FastifyInstance) {
       [id, req.user.sub, input.title ?? null, input.description !== undefined, input.description ?? null, input.visibility ?? null],
     );
     if (!rowCount) return reply.code(404).send({ error: 'Activity not found' });
-    return toSummary((await findActivity(id, req.user.sub))!);
+    return toSummary((await findActivity(id, req.user.sub))!, req.user.sub);
   });
 
   app.delete('/activities/:id', async (req, reply) => {

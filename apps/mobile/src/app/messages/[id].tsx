@@ -15,6 +15,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Avatar } from '@/components/avatar';
+import { SafetyMenu } from '@/components/safety-menu';
 import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
@@ -41,6 +42,7 @@ export default function ChatScreen() {
   const [messages, setMessages] = useState<Message[] | null>(null);
   const [pending, setPending] = useState<{ key: string; body: string; failed: boolean }[]>([]);
   const [draft, setDraft] = useState('');
+  const [menuOpen, setMenuOpen] = useState(false);
   const listRef = useRef<FlatList>(null);
   const latest = useRef<string | undefined>(undefined);
 
@@ -103,8 +105,27 @@ export default function ChatScreen() {
               <Text style={[styles.titleText, { color: colors.text }]} numberOfLines={1}>{name ?? 'Chat'}</Text>
             </Pressable>
           ),
+          headerRight: otherId
+            ? () => (
+                <Pressable hitSlop={10} accessibilityLabel="Report or block" onPress={() => setMenuOpen(true)}>
+                  <MaterialCommunityIcons name="dots-horizontal" size={26} color={colors.text} />
+                </Pressable>
+              )
+            : undefined,
         }}
       />
+      {otherId && (
+        <SafetyMenu
+          visible={menuOpen}
+          onClose={() => setMenuOpen(false)}
+          athleteId={otherId}
+          name={name ?? 'this person'}
+          blockedByYou={false}
+          // A report from a chat points at their latest message, so it's clear what it's about.
+          context={{ messageId: [...(messages ?? [])].reverse().find((m) => m.senderId === otherId)?.id }}
+          onBlockedChange={(blocked) => blocked && router.back()}
+        />
+      )}
       {messages === null ? (
         <ActivityIndicator style={styles.center} color={colors.accent} />
       ) : (

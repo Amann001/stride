@@ -3,6 +3,7 @@ import {
   beforeSchema,
   commentSchema,
   followAllSchema,
+  reportSchema,
   type ActivitySummary,
   type AthleteProfile,
   type AthleteRef,
@@ -15,7 +16,7 @@ import {
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
-import { canSee, findActivity, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
+import { canSee, findActivity, noBlockBetween, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { pool } from '../db';
 
 const idParams = z.object({ id: z.uuid() });
@@ -69,7 +70,7 @@ export async function socialRoutes(app: FastifyInstance) {
        ORDER BY a.started_at DESC LIMIT ${PAGE}`,
       [req.user.sub, before ?? null],
     );
-    return rows.map(toSummary);
+    return rows.map((r) => toSummary(r, req.user.sub));
   });
 
   // ---------- People ----------
@@ -81,7 +82,7 @@ export async function socialRoutes(app: FastifyInstance) {
     const pattern = `%${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
     const { rows } = await pool.query<AthleteRow>(
       `SELECT ${ATHLETE_COLUMNS} FROM users u
-       WHERE u.id <> $1 AND u.name ILIKE $2
+       WHERE u.id <> $1 AND u.name ILIKE $2 AND ${noBlockBetween('$1', 'u.id')}
        ORDER BY (u.name ILIKE $3) DESC, u.name LIMIT 30`,
       [req.user.sub, pattern, `${q.replace(/[\\%_]/g, (c) => `\\${c}`)}%`],
     );
@@ -108,7 +109,7 @@ export async function socialRoutes(app: FastifyInstance) {
        FROM users u
        LEFT JOIN fof ON fof.id = u.id
        LEFT JOIN recent ON recent.id = u.id
-       WHERE u.id <> $1 AND u.id NOT IN (SELECT followee_id FROM mine)
+       WHERE u.id <> $1 AND u.id NOT IN (SELECT followee_id FROM mine) AND ${noBlockBetween('$1', 'u.id')}
        ORDER BY follows_you DESC, fof.mutual DESC NULLS LAST, recent DESC, u.created_at DESC
        LIMIT 15`,
       [req.user.sub],
@@ -129,10 +130,15 @@ export async function socialRoutes(app: FastifyInstance) {
 
   app.get('/athletes/:id', async (req, reply) => {
     const { id } = idParams.parse(req.params);
+    // Someone who blocked you looks like they don't exist; someone you blocked shows an Unblock option.
+    const blockedYou = await pool.query('SELECT 1 FROM blocks WHERE blocker_id = $1 AND blocked_id = $2', [id, req.user.sub]);
+    if (blockedYou.rowCount) return reply.code(404).send({ error: 'Athlete not found' });
     const { rows } = await pool.query<AthleteRow & {
       bio: string | null; followers: number; following: number; activities: number; week: number; year: number;
+      blocked_by_you: boolean;
     }>(
       `SELECT ${ATHLETE_COLUMNS}, u.bio,
+         EXISTS (SELECT 1 FROM blocks WHERE blocker_id = $1 AND blocked_id = u.id) AS blocked_by_you,
          (SELECT count(*)::int FROM follows WHERE followee_id = u.id) AS followers,
          (SELECT count(*)::int FROM follows WHERE follower_id = u.id) AS following,
          (SELECT count(*)::int FROM activities a WHERE a.user_id = u.id AND ${canSee('$1')}) AS activities,
@@ -154,6 +160,7 @@ export async function socialRoutes(app: FastifyInstance) {
       weekDistanceMeters: r.week,
       yearDistanceMeters: r.year,
       isMe: r.id === req.user.sub,
+      blockedByYou: r.blocked_by_you,
     };
     return profile;
   });
@@ -167,7 +174,7 @@ export async function socialRoutes(app: FastifyInstance) {
        ORDER BY a.started_at DESC LIMIT ${PAGE}`,
       [req.user.sub, id, before ?? null],
     );
-    return rows.map(toSummary);
+    return rows.map((r) => toSummary(r, req.user.sub));
   });
 
   for (const list of ['followers', 'following'] as const) {
@@ -175,7 +182,8 @@ export async function socialRoutes(app: FastifyInstance) {
       const { id } = idParams.parse(req.params);
       const join = list === 'followers' ? 'f.follower_id = u.id AND f.followee_id = $2' : 'f.followee_id = u.id AND f.follower_id = $2';
       const { rows } = await pool.query<AthleteRow>(
-        `SELECT ${ATHLETE_COLUMNS} FROM users u JOIN follows f ON ${join} ORDER BY f.created_at DESC LIMIT 200`,
+        `SELECT ${ATHLETE_COLUMNS} FROM users u JOIN follows f ON ${join}
+         WHERE ${noBlockBetween('$1', 'u.id')} ORDER BY f.created_at DESC LIMIT 200`,
         [req.user.sub, id],
       );
       return rows.map((r) => toAthlete(r));
@@ -187,7 +195,7 @@ export async function socialRoutes(app: FastifyInstance) {
   app.post('/athletes/:id/follow', async (req, reply) => {
     const { id } = idParams.parse(req.params);
     if (id === req.user.sub) return reply.code(400).send({ error: "You can't follow yourself" });
-    const exists = await pool.query('SELECT 1 FROM users WHERE id = $1', [id]);
+    const exists = await pool.query(`SELECT 1 FROM users WHERE id = $1 AND ${noBlockBetween('$1', '$2')}`, [id, req.user.sub]);
     if (!exists.rowCount) return reply.code(404).send({ error: 'Athlete not found' });
     const { rowCount } = await pool.query(
       'INSERT INTO follows (follower_id, followee_id) VALUES ($1, $2) ON CONFLICT DO NOTHING',
@@ -209,7 +217,7 @@ export async function socialRoutes(app: FastifyInstance) {
     const { ids } = followAllSchema.parse(req.body);
     const { rows } = await pool.query<{ followee_id: string }>(
       `INSERT INTO follows (follower_id, followee_id)
-       SELECT $1, u.id FROM users u WHERE u.id = ANY($2::uuid[]) AND u.id <> $1
+       SELECT $1, u.id FROM users u WHERE u.id = ANY($2::uuid[]) AND u.id <> $1 AND ${noBlockBetween('$1', 'u.id')}
        ON CONFLICT DO NOTHING RETURNING followee_id`,
       [req.user.sub, ids],
     );
@@ -245,7 +253,7 @@ export async function socialRoutes(app: FastifyInstance) {
     if (!(await findActivity(id, req.user.sub))) return reply.code(404).send({ error: 'Activity not found' });
     const { rows } = await pool.query<AthleteRow>(
       `SELECT ${ATHLETE_COLUMNS} FROM kudos k JOIN users u ON u.id = k.user_id
-       WHERE k.activity_id = $2 ORDER BY k.created_at DESC`,
+       WHERE k.activity_id = $2 AND ${noBlockBetween('$1', 'u.id')} ORDER BY k.created_at DESC`,
       [req.user.sub, id],
     );
     return rows.map((r) => toAthlete(r));
@@ -267,8 +275,9 @@ export async function socialRoutes(app: FastifyInstance) {
     if (!(await findActivity(id, req.user.sub))) return reply.code(404).send({ error: 'Activity not found' });
     const { rows } = await pool.query<CommentRow>(
       `SELECT c.id, c.activity_id, c.user_id, u.name, c.body, c.created_at
-       FROM comments c JOIN users u ON u.id = c.user_id WHERE c.activity_id = $1 ORDER BY c.created_at`,
-      [id],
+       FROM comments c JOIN users u ON u.id = c.user_id
+       WHERE c.activity_id = $1 AND ${noBlockBetween('$2', 'c.user_id')} ORDER BY c.created_at`,
+      [id, req.user.sub],
     );
     return rows.map(toComment);
   });
@@ -312,7 +321,7 @@ export async function socialRoutes(app: FastifyInstance) {
        JOIN users u ON u.id = n.actor_id
        LEFT JOIN activities a ON a.id = n.activity_id
        LEFT JOIN comments c ON c.id = n.comment_id
-       WHERE n.user_id = $1 ORDER BY n.created_at DESC LIMIT 60`,
+       WHERE n.user_id = $1 AND ${noBlockBetween('$1', 'n.actor_id')} ORDER BY n.created_at DESC LIMIT 60`,
       [req.user.sub],
     );
     return rows.map((r) => ({
@@ -335,12 +344,61 @@ export async function socialRoutes(app: FastifyInstance) {
   app.get('/badges', async (req): Promise<Badges> => {
     const { rows } = await pool.query<{ notifications: number; messages: number }>(
       `SELECT
-         (SELECT count(*)::int FROM notifications WHERE user_id = $1 AND read_at IS NULL) AS notifications,
+         (SELECT count(*)::int FROM notifications n
+            WHERE n.user_id = $1 AND n.read_at IS NULL AND ${noBlockBetween('$1', 'n.actor_id')}) AS notifications,
          (SELECT count(*)::int FROM conversation_members me
             JOIN messages m ON m.conversation_id = me.conversation_id
-            WHERE me.user_id = $1 AND m.sender_id <> $1 AND m.created_at > me.last_read_at) AS messages`,
+            WHERE me.user_id = $1 AND m.sender_id <> $1 AND m.created_at > me.last_read_at
+              AND ${noBlockBetween('$1', 'm.sender_id')}) AS messages`,
       [req.user.sub],
     );
     return rows[0];
+  });
+
+  // ---------- Safety: block and report ----------
+
+  // Block someone: you stop following each other, and neither of you can see, follow,
+  // message or comment on the other. They are not told.
+  app.post('/athletes/:id/block', async (req, reply) => {
+    const { id } = idParams.parse(req.params);
+    const me = req.user.sub;
+    if (id === me) return reply.code(400).send({ error: "You can't block yourself" });
+    const exists = await pool.query('SELECT 1 FROM users WHERE id = $1', [id]);
+    if (!exists.rowCount) return reply.code(404).send({ error: 'Athlete not found' });
+    await pool.query('INSERT INTO blocks (blocker_id, blocked_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [me, id]);
+    await pool.query(
+      'DELETE FROM follows WHERE (follower_id = $1 AND followee_id = $2) OR (follower_id = $2 AND followee_id = $1)',
+      [me, id],
+    );
+    return reply.code(204).send();
+  });
+
+  app.delete('/athletes/:id/block', async (req, reply) => {
+    const { id } = idParams.parse(req.params);
+    await pool.query('DELETE FROM blocks WHERE blocker_id = $1 AND blocked_id = $2', [req.user.sub, id]);
+    return reply.code(204).send();
+  });
+
+  // People you've blocked, so you can unblock them (they no longer show up anywhere else).
+  app.get('/me/blocked', async (req): Promise<AthleteRef[]> => {
+    const { rows } = await pool.query<{ id: string; name: string }>(
+      `SELECT u.id, u.name FROM blocks b JOIN users u ON u.id = b.blocked_id
+       WHERE b.blocker_id = $1 ORDER BY b.created_at DESC`,
+      [req.user.sub],
+    );
+    return rows;
+  });
+
+  // Report a person, activity, comment or message. Saved for the app owner to review.
+  app.post('/reports', async (req, reply) => {
+    const input = reportSchema.parse(req.body);
+    if (input.targetUserId === req.user.sub) return reply.code(400).send({ error: "You can't report yourself" });
+    await pool.query(
+      `INSERT INTO reports (reporter_id, target_user_id, activity_id, comment_id, message_id, reason, details)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [req.user.sub, input.targetUserId, input.activityId ?? null, input.commentId ?? null, input.messageId ?? null,
+        input.reason, input.details ?? null],
+    );
+    return reply.code(201).send({ ok: true });
   });
 }

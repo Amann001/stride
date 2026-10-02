@@ -2,6 +2,7 @@ import {
   decodePolyline,
   distanceBetween,
   heatmapParamsSchema,
+  hidePolylineEnds,
   nearbySchema,
   planRouteSchema,
   routeDifficulty,
@@ -273,7 +274,9 @@ export async function heatmapRoutes(app: FastifyInstance) {
           const hour = (r.started_at.getUTCHours() + r.started_at.getUTCMinutes() / 60 + r.lng / 15 + 48) % 24;
           return hour >= 19 || hour < 5;
         })
-        .map((r) => r.polyline);
+        // Shared heatmaps never show where people start or finish (privacy zone).
+        .map((r) => (kind === 'personal' ? r.polyline : hidePolylineEnds(r.polyline)))
+        .filter((p) => p !== '');
       png = lines.length ? renderTile(kind, zoom, x, y, lines) : EMPTY_TILE;
       tileCache.set(key, png);
     }

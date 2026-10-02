@@ -31,6 +31,7 @@ import type { IconName } from '@/constants/categories';
 import { CATEGORY_LOOKS } from '@/constants/categories';
 import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
+import { useAuth } from '@/lib/auth';
 import { addPending, isRetryable, newClientId, type PendingActivity } from '@/lib/pending-activities';
 import { useGpsSignal } from '@/lib/use-gps-signal';
 import { setActiveRoute, useActiveRoute } from '@/lib/route-store';
@@ -60,6 +61,7 @@ export default function RecordScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const focused = useIsFocused();
+  const { user } = useAuth();
   const rec = useRecorder();
   const [type, setType] = useState<ActivityType>('run');
   const [voiceOn, setVoiceOn] = useState(true);
@@ -160,9 +162,9 @@ export default function RecordScreen() {
       router.push({ pathname: '/activity/[id]', params: { id: saved.id } });
     } catch (err) {
       // No signal or a server hiccup: keep the recording on the phone and upload it later.
-      if (isRetryable(err)) {
+      if (isRetryable(err) && user) {
         try {
-          await addPending(activity);
+          await addPending(user.id, activity);
           rec.discard();
           setExpanded(false);
           say(`${ACTIVITY_LABELS[type]} saved on your phone.`);

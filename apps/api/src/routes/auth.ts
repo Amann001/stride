@@ -1,4 +1,11 @@
-import { loginSchema, registerSchema, updateProfileSchema, type AuthResponse, type User } from '@repo/shared';
+import {
+  deleteAccountSchema,
+  loginSchema,
+  registerSchema,
+  updateProfileSchema,
+  type AuthResponse,
+  type User,
+} from '@repo/shared';
 import type { FastifyInstance } from 'fastify';
 
 import { pool } from '../db';
@@ -25,8 +32,13 @@ export function toUser(row: UserRow): User {
   };
 }
 
+// Per visitor (IP address): stops someone trying thousands of passwords on an account,
+// while a person who mistypes a few times is never blocked for long.
+const LOGIN_LIMIT = { max: 10, timeWindow: '15 minutes' };
+const SIGNUP_LIMIT = { max: 5, timeWindow: '1 hour' };
+
 export async function authRoutes(app: FastifyInstance) {
-  app.post('/auth/register', async (req, reply) => {
+  app.post('/auth/register', { config: { rateLimit: SIGNUP_LIMIT } }, async (req, reply) => {
     const input = registerSchema.parse(req.body);
     const passwordHash = await hashPassword(input.password);
     const { rows } = await pool.query<UserRow>(
@@ -43,7 +55,7 @@ export async function authRoutes(app: FastifyInstance) {
     return reply.code(201).send(body);
   });
 
-  app.post('/auth/login', async (req, reply) => {
+  app.post('/auth/login', { config: { rateLimit: LOGIN_LIMIT } }, async (req, reply) => {
     const input = loginSchema.parse(req.body);
     const { rows } = await pool.query<UserRow>('SELECT * FROM users WHERE email = $1', [input.email]);
     const row = rows[0];
@@ -74,5 +86,18 @@ export async function authRoutes(app: FastifyInstance) {
     );
     if (!rows[0]) return reply.code(404).send({ error: 'User not found' });
     return toUser(rows[0]);
+  });
+
+  // Delete your account and everything in it (activities, routes, follows, kudos, comments,
+  // messages, clubs you created). Needs your password, so nobody can do it from an unlocked
+  // phone by accident. This cannot be undone.
+  app.delete('/me', { onRequest: [app.authenticate], config: { rateLimit: LOGIN_LIMIT } }, async (req, reply) => {
+    const { password } = deleteAccountSchema.parse(req.body);
+    const { rows } = await pool.query<UserRow>('SELECT * FROM users WHERE id = $1', [req.user.sub]);
+    if (!rows[0] || !(await verifyPassword(password, rows[0].password_hash))) {
+      return reply.code(403).send({ error: 'That password is not right' });
+    }
+    await pool.query('DELETE FROM users WHERE id = $1', [req.user.sub]);
+    return reply.code(204).send();
   });
 }
