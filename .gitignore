@@ -15,3 +15,7 @@ dist/
 /*.mp4
 /*.mov
 WhatsApp *
+
+# Vercel (website hosting) link for this folder, and its temporary key.
+.vercel
+/.env.local

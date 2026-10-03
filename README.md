@@ -99,6 +99,7 @@ To try Friends you need a second account: register one on the website or another
 | Database | Neon (Singapore) |
 | Backend API | Render, `https://stride-api-sa5e.onrender.com` (free plan, Singapore). Redeploys on every push to `main` and runs new migrations automatically. Config: [`render.yaml`](render.yaml) |
 | iPhone app | Expo's cloud (EAS Update, channel `production`), opened in Expo Go |
+| Website | Vercel, https://stride-amanswamy.vercel.app (free Hobby plan; project `stride-app`, folder `apps/web`, server code in Singapore). `NEXT_PUBLIC_API_URL` is set to the backend above in the Vercel project's settings |
 
 **Open the app anywhere** (Wi-Fi or mobile data, laptop off): in Expo Go, signed in as the
 project owner, open
