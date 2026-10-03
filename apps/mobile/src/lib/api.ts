@@ -165,6 +165,11 @@ export const api = {
   inviteToChallenge: (id: string, ids: string[]) =>
     request<void>(`/custom-challenges/${id}/invite`, { method: 'POST', body: { ids } }),
   deleteCustomChallenge: (id: string) => request<void>(`/custom-challenges/${id}`, { method: 'DELETE' }),
+
+  // Push notifications for this phone.
+  savePushToken: (token: string, platform: 'android' | 'ios') =>
+    request<void>('/me/push-token', { method: 'PUT', body: { token, platform } }),
+  removePushToken: (token: string) => request<void>('/me/push-token', { method: 'DELETE', body: { token } }),
   updateActivity: (id: string, input: UpdateActivityInput) =>
     request<ActivitySummary>(`/activities/${id}`, { method: 'PATCH', body: input }),
 

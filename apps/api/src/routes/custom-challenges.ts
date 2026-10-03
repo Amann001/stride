@@ -16,6 +16,7 @@ import { z } from 'zod';
 import { noBlockBetween } from '../activity-sql';
 import { progressFor, TOTALS_COLUMNS, type TotalsRow } from '../challenge-progress';
 import { pool } from '../db';
+import { messageFor, pushInBackground } from '../push';
 import { LIMITS } from '../rate-limits';
 import { safeTimeZone, todayIn, tzQuery } from '../time';
 
@@ -122,9 +123,10 @@ async function invitable(inviterId: string, ids: string[]): Promise<string[]> {
   return rows.map((r) => r.id);
 }
 
-// Adds invites for people not already in the challenge, and tells each of them.
-async function addInvites(client: PoolClient, challengeId: string, inviterId: string, ids: string[]) {
-  if (!ids.length) return;
+// Adds invites for people not already in the challenge, and tells each of them in the app.
+// Returns who was newly invited, to push to their phones once the change is saved.
+async function addInvites(client: PoolClient, challengeId: string, inviterId: string, ids: string[]): Promise<string[]> {
+  if (!ids.length) return [];
   const { rows } = await client.query<{ user_id: string }>(
     `INSERT INTO custom_challenge_members (challenge_id, user_id, status, invited_by)
      SELECT $1, unnest($2::uuid[]), 'invited', $3
@@ -138,6 +140,13 @@ async function addInvites(client: PoolClient, challengeId: string, inviterId: st
       [rows.map((r) => r.user_id), inviterId, challengeId],
     );
   }
+  return rows.map((r) => r.user_id);
+}
+
+function pushInvites(challengeId: string, inviterId: string, invited: string[]) {
+  if (!invited.length) return;
+  const message = messageFor(inviterId, 'challenge_invite', { challengeId });
+  for (const userId of invited) pushInBackground(userId, inviterId, message);
 }
 
 async function inTransaction<T>(work: (client: PoolClient) => Promise<T>): Promise<T> {
@@ -177,7 +186,7 @@ export async function customChallengeRoutes(app: FastifyInstance) {
     if (challengeDays(today, input.startDate) > 61) return reply.code(400).send({ error: 'Pick a start date in the next 2 months' });
 
     const invitees = await invitable(me, input.inviteIds.filter((id) => id !== me));
-    const id = await inTransaction(async (client) => {
+    const { id, invited } = await inTransaction(async (client) => {
       const { rows } = await client.query<{ id: string }>(
         `INSERT INTO custom_challenges (creator_id, title, sport, metric, goal, start_date, end_date, time_zone)
          VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING id`,
@@ -187,9 +196,9 @@ export async function customChallengeRoutes(app: FastifyInstance) {
         "INSERT INTO custom_challenge_members (challenge_id, user_id, status) VALUES ($1, $2, 'joined')",
         [rows[0].id, me],
       );
-      await addInvites(client, rows[0].id, me, invitees);
-      return rows[0].id;
+      return { id: rows[0].id, invited: await addInvites(client, rows[0].id, me, invitees) };
     });
+    pushInvites(id, me, invited);
     return reply.code(201).send({ id });
   });
 
@@ -267,7 +276,7 @@ export async function customChallengeRoutes(app: FastifyInstance) {
     if (rows[0].n + invitees.length > CUSTOM_CHALLENGE_MAX_MEMBERS) {
       return reply.code(400).send({ error: `A challenge can have up to ${CUSTOM_CHALLENGE_MAX_MEMBERS} people` });
     }
-    await inTransaction((client) => addInvites(client, id, me, invitees));
+    pushInvites(id, me, await inTransaction((client) => addInvites(client, id, me, invitees)));
     return reply.code(204).send();
   });
 

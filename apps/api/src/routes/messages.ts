@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 import { noBlockBetween } from '../activity-sql';
 import { pool } from '../db';
+import { pushInBackground, type PushMessage } from '../push';
 import { LIMITS } from '../rate-limits';
 
 // Private one-to-one messages. You can start a chat with someone if either of you follows
@@ -64,6 +65,25 @@ async function listConversations(userId: string, onlyId?: string): Promise<Conve
     lastMessage: r.last ? toMessage(r.last) : null,
     unreadCount: r.unread,
   }));
+}
+
+// "Asha: Run tomorrow at 6?" on the other person's phone.
+function pushNewMessage(conversationId: string, senderId: string, body: string) {
+  pool
+    .query<{ other: string; sender: string }>(
+      `SELECT m.user_id AS other, (SELECT name FROM users WHERE id = $2) AS sender
+       FROM conversation_members m WHERE m.conversation_id = $1 AND m.user_id <> $2`,
+      [conversationId, senderId],
+    )
+    .then(({ rows }) => {
+      for (const r of rows) {
+        // The chat screen shows the other person's name and links to their profile.
+        const url = `/messages/${conversationId}?name=${encodeURIComponent(r.sender)}&otherId=${senderId}`;
+        const message: PushMessage = { title: r.sender, body, url };
+        pushInBackground(r.other, senderId, message);
+      }
+    })
+    .catch((err) => console.warn('Message push not sent:', (err as Error).message));
 }
 
 export async function messageRoutes(app: FastifyInstance) {
@@ -146,6 +166,7 @@ export async function messageRoutes(app: FastifyInstance) {
     // Your own message counts as read.
     await pool.query('UPDATE conversation_members SET last_read_at = $3 WHERE conversation_id = $1 AND user_id = $2',
       [id, req.user.sub, rows[0].created_at]);
+    pushNewMessage(id, req.user.sub, body);
     return reply.code(201).send(toMessage(rows[0]));
   });
 

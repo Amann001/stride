@@ -60,6 +60,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+// A phone signing up for push notifications. Expo's tokens look like "ExponentPushToken[...]".
+export const pushTokenSchema = z.object({
+  token: z.string().regex(/^Expo(nent)?PushToken\[[^\]]{10,200}\]$/, 'Not a push token'),
+  platform: z.enum(['android', 'ios']),
+});
+export const removePushTokenSchema = pushTokenSchema.pick({ token: true });
+
 // Deleting your account asks for your password once more.
 export const deleteAccountSchema = z.object({
   password: z.string().min(1, 'Enter your password to confirm'),

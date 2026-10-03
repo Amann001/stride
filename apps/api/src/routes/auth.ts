@@ -7,6 +7,8 @@ import {
   deleteAccountSchema,
   forgotPasswordSchema,
   loginSchema,
+  pushTokenSchema,
+  removePushTokenSchema,
   registerSchema,
   resetPasswordSchema,
   updateProfileSchema,
@@ -174,6 +176,27 @@ export async function authRoutes(app: FastifyInstance) {
     );
     await pool.query('DELETE FROM password_resets WHERE user_id = $1', [req.user.sub]);
     return respond(updated[0]);
+  });
+
+  // ---------- Push notifications ----------
+
+  // This phone wants push notifications for the logged-in account. A phone belongs to whoever
+  // logged in on it last, so the token moves over if someone else used it before.
+  app.put('/me/push-token', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const { token, platform } = pushTokenSchema.parse(req.body);
+    await pool.query(
+      `INSERT INTO push_tokens (token, user_id, platform) VALUES ($1, $2, $3)
+       ON CONFLICT (token) DO UPDATE SET user_id = EXCLUDED.user_id, platform = EXCLUDED.platform, updated_at = now()`,
+      [token, req.user.sub, platform],
+    );
+    return reply.code(204).send();
+  });
+
+  // Logging out on this phone: stop pushing to it.
+  app.delete('/me/push-token', { onRequest: [app.authenticate] }, async (req, reply) => {
+    const { token } = removePushTokenSchema.parse(req.body);
+    await pool.query('DELETE FROM push_tokens WHERE token = $1 AND user_id = $2', [token, req.user.sub]);
+    return reply.code(204).send();
   });
 
   // ---------- Change email ----------

@@ -24,6 +24,12 @@ export interface Reply<T = any> {
 
 export async function startApp(): Promise<FastifyInstance> {
   const app = await buildApp();
+  // Each test file has its own database connections; close them when its app closes, so
+  // later files don't run out of connections to the test database.
+  app.addHook('onClose', async () => {
+    await new Promise((r) => setTimeout(r, 200)); // let background pushes finish
+    await pool.end();
+  });
   await app.ready();
   return app;
 }

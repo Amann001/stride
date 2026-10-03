@@ -9,9 +9,11 @@ import { useColors } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { installErrorReporting, reportError } from '@/lib/error-reporting';
 import { uploadPending } from '@/lib/pending-activities';
+import { installNotificationHandling, registerForPush, useOpenTappedNotifications } from '@/lib/push';
 
 SplashScreen.preventAutoHideAsync();
 installErrorReporting();
+installNotificationHandling();
 
 // Shown instead of a crash if a screen breaks: the error is reported, and "Try again"
 // reloads the screen.
@@ -53,16 +55,20 @@ function RootNavigator() {
   }, []);
 
   // Upload any activities that were saved on the phone while offline: when you log in or
-  // open the app, and whenever the app comes back to the front.
+  // open the app, and whenever the app comes back to the front. Also sign this phone up for
+  // push notifications (the phone asks permission only the first time).
   const userId = user?.id;
   useEffect(() => {
     if (!userId) return;
     uploadPending(userId).catch(() => {});
+    registerForPush().catch(() => {});
     const sub = AppState.addEventListener('change', (state) => {
       if (state === 'active') uploadPending(userId).catch(() => {});
     });
     return () => sub.remove();
   }, [userId]);
+
+  useOpenTappedNotifications(!loading && !!user);
 
   // Once login state is known and the minimum time is up, fade the intro out.
   useEffect(() => {

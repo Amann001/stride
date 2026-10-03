@@ -2,6 +2,7 @@ import type { AuthResponse, User } from '@repo/shared';
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react';
 
 import { api, ApiError, setAuthToken } from './api';
+import { unregisterPush } from './push';
 import { storage } from './storage';
 
 // Keeps track of who is logged in. The login token is saved in the iPhone's
@@ -89,7 +90,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       loading,
       signIn: async (email, password) => finishLogin(await api.login(email, password)),
       signUp: async (name, email, password) => finishLogin(await api.register(name, email, password)),
-      signOut: forgetLogin,
+      signOut: async () => {
+        await unregisterPush().catch(() => {});
+        await forgetLogin();
+      },
       updateProfile: async (input) => keepUser(await api.updateProfile(input)),
       changePassword: async (current, next) => finishLogin(await api.changePassword(current, next)),
       confirmEmailChange: async (code) => finishLogin(await api.confirmEmailChange(code)),

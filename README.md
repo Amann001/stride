@@ -85,7 +85,10 @@ first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most 
 - **Follow** people to see their activities in your Home feed. Give **kudos**, **comment**, and
   open their profile (followers, following, activities).
 - **Messages:** private one-to-one chats with anyone you follow or who follows you.
-- **Notifications:** new followers, kudos and comments, plus your achievements.
+- **Notifications:** new followers, kudos, comments and challenge invites, plus your achievements.
+  On the Android app they also arrive as **push notifications** (with new messages too), even when
+  the app is closed; tapping one opens what it's about. Expo Go (iPhone) can't receive push, so
+  there they stay in the in-app list.
 - **Clubs** (Groups tab): create or join a club for a sport, with a weekly distance leaderboard.
 - **Who can view** each activity: Everyone, Followers, or Only You. Private activities never
   appear in feeds, clubs or shared heatmaps.
@@ -133,13 +136,13 @@ installed apps through `npm run publish:app`.
 npm test
 ```
 
-Runs every automated test (about 30 seconds):
+Runs every automated test (133 of them, about 30 seconds):
 
 | Where | What it checks |
 |---|---|
-| `apps/api/test` | The server, end to end: sign-up, login, password reset and email change (with a pretend mailbox), recording activities (distance, PRs, GPS glitches, duplicate uploads), who can see what (Everyone / Followers / Only you, the 200 m privacy zone), follows, feed, kudos, comments, notifications, blocking, reports, messages, clubs, monthly and created challenges, stats, goals, saved routes, heatmap keys |
+| `apps/api/test` | The server, end to end: sign-up, login, password reset and email change (with a pretend mailbox), recording activities (distance, PRs, GPS glitches, duplicate uploads), who can see what (Everyone / Followers / Only you, the 200 m privacy zone), follows, feed, kudos, comments, notifications, blocking, reports, messages, clubs, monthly and created challenges, stats, goals, saved routes, heatmap keys, push notifications (what's sent, to which phones, not after logout or a block, dead phones removed) |
 | `packages/shared/test` | The maths and rules both apps share: GPS distance, glitch removal, climbing, polylines, privacy zone, splits, best efforts, achievements, formatting, form checks |
-| `apps/mobile/test` | The phone's offline outbox (a run recorded without signal is never lost or uploaded twice) and the stats shown on cards |
+| `apps/mobile/test` | The phone's offline outbox (a run recorded without signal is never lost or uploaded twice), push sign-up and logout, and the stats shown on cards |
 
 The server tests start their own throwaway Postgres in memory (PGlite) and run the real
 migrations on it. They never read `.env` and refuse to run against anything but this computer,
@@ -166,6 +169,14 @@ gpg --decrypt --output stride.dump stride.dump.gpg
 pg_restore --clean --if-exists --no-owner --dbname "<DATABASE_URL>" stride.dump
 ```
 Restoring replaces the current data with the backup's, so try it on a new Neon branch first.
+
+### Push notifications
+The server sends pushes through Expo's free push service (`apps/api/src/push.ts`); phones sign
+up at `PUT /me/push-token` after login and sign out at logout. Android needs Firebase (free):
+`apps/mobile/google-services.json` in the app, and the Firebase service account key uploaded to
+expo.dev → Credentials → Android → FCM V1 (never commit that key). Push is native code, so it
+reaches people with a new APK (`npm run build:android`); the app's version went to 1.1.0 so
+over-the-air updates for it only go to the new APK, never to older installs without it.
 
 ### Password reset emails
 "Forgot password" sends a 6-digit code by email. Until email is set up it says it isn't

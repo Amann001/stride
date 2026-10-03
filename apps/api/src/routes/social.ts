@@ -18,6 +18,7 @@ import { z } from 'zod';
 
 import { canSee, findActivity, noBlockBetween, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { pool } from '../db';
+import { messageFor, pushInBackground } from '../push';
 import { LIMITS } from '../rate-limits';
 
 const idParams = z.object({ id: z.uuid() });
@@ -45,13 +46,14 @@ const toAthlete = (r: AthleteRow, reason?: string): AthleteSummary => ({
   ...(reason ? { reason } : {}),
 });
 
-// Adds a notification for `userId` (never for your own actions).
+// Adds a notification for `userId` (never for your own actions), and pushes it to their phones.
 async function notify(userId: string, actorId: string, kind: NotificationKind, activityId: string | null = null, commentId: string | null = null) {
   if (userId === actorId) return;
   await pool.query(
     'INSERT INTO notifications (user_id, actor_id, kind, activity_id, comment_id) VALUES ($1, $2, $3, $4, $5)',
     [userId, actorId, kind, activityId, commentId],
   );
+  pushInBackground(userId, actorId, messageFor(actorId, kind, { activityId, commentId }));
 }
 
 export async function socialRoutes(app: FastifyInstance) {
