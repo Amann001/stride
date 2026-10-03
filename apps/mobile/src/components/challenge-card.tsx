@@ -1,5 +1,6 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import { formatChallengeValue, type Challenge } from '@repo/shared';
+import { formatChallengeDate, formatChallengeValue, type Challenge } from '@repo/shared';
+import { router } from 'expo-router';
 import { useState } from 'react';
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 
@@ -20,7 +21,19 @@ export function ChallengeBadge({ challenge, size = 56 }: { challenge: Challenge;
   );
 }
 
-// One challenge: what to do, how far along you are, and a Join button.
+// "Created by Riya · Ends 23 Oct", for a challenge someone created.
+function customLine(c: Challenge): string | null {
+  if (!c.custom) return null;
+  const when = c.custom.status === 'upcoming'
+    ? `Starts ${formatChallengeDate(c.custom.startDate)}`
+    : `Ends ${formatChallengeDate(c.custom.endDate)}`;
+  return `Created by ${c.custom.creator.name} · ${when}`;
+}
+
+const openChallenge = (id: string) => router.push({ pathname: '/challenge/[id]', params: { id } });
+
+// One challenge: what to do, how far along you are, and a Join button. A challenge someone
+// created opens its own page (with the leaderboard) when tapped; an invite can be accepted here.
 export function ChallengeCard({ challenge, onChange, style }: {
   challenge: Challenge;
   // Called after joining or leaving, so the list can reload.
@@ -34,7 +47,8 @@ export function ChallengeCard({ challenge, onChange, style }: {
   const toggle = async () => {
     setBusy(true);
     try {
-      if (challenge.joined) await api.leaveChallenge(challenge.id);
+      if (challenge.custom) await api.acceptChallengeInvite(challenge.id);
+      else if (challenge.joined) await api.leaveChallenge(challenge.id);
       else await api.joinChallenge(challenge.id);
       onChange();
     } catch (err) {
@@ -50,8 +64,19 @@ export function ChallengeCard({ challenge, onChange, style }: {
       { text: 'Leave', style: 'destructive', onPress: toggle },
     ]);
 
+  const custom = customLine(challenge);
+  const onButton = challenge.custom
+    ? (challenge.joined ? () => openChallenge(challenge.id) : toggle)
+    : (challenge.joined ? confirmLeave : toggle);
+  // Filled button for something to do (join, accept); outlined once you're in.
+  const outlined = challenge.joined;
+  const label = challenge.custom
+    ? (challenge.joined ? 'View Challenge' : 'Accept Invite')
+    : (challenge.joined ? 'Joined' : 'Join Challenge');
+
   return (
-    <View style={[styles.card, { backgroundColor: colors.raised }, style]}>
+    <Pressable disabled={!challenge.custom} onPress={() => openChallenge(challenge.id)}
+      style={[styles.card, { backgroundColor: colors.raised }, style]}>
       <View style={styles.top}>
         <ChallengeBadge challenge={challenge} />
         <View style={styles.text}>
@@ -74,22 +99,21 @@ export function ChallengeCard({ challenge, onChange, style }: {
       )}
 
       <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
+        {custom ? `${custom} · ` : ''}
         {challenge.participants === 1 ? '1 athlete has joined' : `${challenge.participants} athletes have joined`}
       </Text>
 
       <Pressable
         disabled={busy}
-        onPress={challenge.joined ? confirmLeave : toggle}
-        style={[styles.button, challenge.joined ? { borderWidth: 1, borderColor: colors.border } : { backgroundColor: colors.brand }]}>
+        onPress={onButton}
+        style={[styles.button, outlined ? { borderWidth: 1, borderColor: colors.border } : { backgroundColor: colors.brand }]}>
         {busy ? (
-          <ActivityIndicator color={challenge.joined ? colors.text : colors.onBrand} />
+          <ActivityIndicator color={outlined ? colors.text : colors.onBrand} />
         ) : (
-          <Text style={[styles.buttonText, { color: challenge.joined ? colors.text : colors.onBrand }]}>
-            {challenge.joined ? 'Joined' : 'Join Challenge'}
-          </Text>
+          <Text style={[styles.buttonText, { color: outlined ? colors.text : colors.onBrand }]}>{label}</Text>
         )}
       </Pressable>
-    </View>
+    </Pressable>
   );
 }
 

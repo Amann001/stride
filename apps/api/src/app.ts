@@ -12,6 +12,7 @@ import { LIMITS } from './rate-limits';
 import { activityRoutes } from './routes/activities';
 import { authRoutes } from './routes/auth';
 import { challengeRoutes } from './routes/challenges';
+import { customChallengeRoutes } from './routes/custom-challenges';
 import { clubRoutes } from './routes/clubs';
 import { legalRoutes } from './routes/legal';
 import { heatmapRoutes, routeRoutes } from './routes/maps';
@@ -124,6 +125,7 @@ export async function buildApp() {
   await app.register(activityRoutes);
   await app.register(statsRoutes);
   await app.register(challengeRoutes);
+  await app.register(customChallengeRoutes);
   await app.register(routeRoutes);
   await app.register(heatmapRoutes);
   await app.register(socialRoutes);

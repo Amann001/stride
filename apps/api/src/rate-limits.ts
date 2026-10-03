@@ -41,6 +41,8 @@ export const LIMITS = {
   kudos: perAccount(120, '1 minute'),
   report: perAccount(15, '1 hour'),
   newClub: perAccount(5, '1 hour'),
+  newChallenge: perAccount(10, '1 hour'),
+  challengeInvite: perAccount(30, '1 hour'),
   activity: perAccount(60, '1 hour'),
   routePlanning: perAccount(60, '1 minute'),
   errorReport: perIp(30, '1 minute'),

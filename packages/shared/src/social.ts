@@ -56,13 +56,15 @@ export interface Conversation {
   unreadCount: number;
 }
 
-export type NotificationKind = 'follow' | 'kudos' | 'comment';
+export type NotificationKind = 'follow' | 'kudos' | 'comment' | 'challenge_invite';
 
 export interface Notification {
   id: string;
   kind: NotificationKind;
   actor: AthleteRef;
   activity: { id: string; title: string } | null;
+  // The challenge you were invited to, for challenge invites.
+  challenge: { id: string; title: string } | null;
   // The comment text, for comment notifications.
   text: string | null;
   createdAt: string;

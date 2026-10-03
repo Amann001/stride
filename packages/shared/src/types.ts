@@ -105,4 +105,6 @@ export interface ChallengesResponse {
   current: Challenge[];
   // Challenges you joined and finished, any month. These go in your trophy case.
   completed: Challenge[];
+  // Created challenges you've joined or been invited to that haven't ended.
+  custom: Challenge[];
 }

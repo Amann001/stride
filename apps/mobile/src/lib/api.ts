@@ -11,6 +11,8 @@ import type {
   Club,
   ClubDetail,
   Comment,
+  CreateCustomChallengeInput,
+  CustomChallengeDetail,
   Conversation,
   CreateClubInput,
   Message,
@@ -153,6 +155,16 @@ export const api = {
   getChallenges: () => request<ChallengesResponse>(`/challenges?${TZ}`),
   joinChallenge: (id: string) => request<void>(`/challenges/${encodeURIComponent(id)}/join?${TZ}`, { method: 'POST' }),
   leaveChallenge: (id: string) => request<void>(`/challenges/${encodeURIComponent(id)}/join`, { method: 'DELETE' }),
+  // Challenges people create and invite friends to.
+  createCustomChallenge: (input: CreateCustomChallengeInput) =>
+    request<{ id: string }>(`/custom-challenges?${TZ}`, { method: 'POST', body: input }),
+  customChallenge: (id: string) => request<CustomChallengeDetail>(`/custom-challenges/${id}`),
+  acceptChallengeInvite: (id: string) => request<void>(`/custom-challenges/${id}/join`, { method: 'POST' }),
+  // Leave, or decline an invite.
+  leaveCustomChallenge: (id: string) => request<void>(`/custom-challenges/${id}/join`, { method: 'DELETE' }),
+  inviteToChallenge: (id: string, ids: string[]) =>
+    request<void>(`/custom-challenges/${id}/invite`, { method: 'POST', body: { ids } }),
+  deleteCustomChallenge: (id: string) => request<void>(`/custom-challenges/${id}`, { method: 'DELETE' }),
   updateActivity: (id: string, input: UpdateActivityInput) =>
     request<ActivitySummary>(`/activities/${id}`, { method: 'PATCH', body: input }),
 

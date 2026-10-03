@@ -72,7 +72,9 @@ first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most 
 - **Record:** full-screen map, GPS status, a stats panel that expands to big numbers and splits,
   a sport picker and voice updates.
 - **Groups:** monthly challenges (e.g. "October 50K Run", "400-Minute Challenge"). Join one and your
-  activities count automatically; finished ones go in your trophy case.
+  activities count automatically; finished ones go in your trophy case. **Create a Challenge** sets
+  your own goal and dates (up to 3 months) and invites people you follow: they get a notification,
+  and the challenge has its own leaderboard. "Only you" activities don't count towards it.
 - **You:** Progress (this week, past 12 weeks chart, streak calendar, weekly goal, best efforts),
   Activities, and More (statistics, trophy case, settings).
 

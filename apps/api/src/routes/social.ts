@@ -314,13 +314,15 @@ export async function socialRoutes(app: FastifyInstance) {
   app.get('/notifications', async (req): Promise<Notification[]> => {
     const { rows } = await pool.query<{
       id: string; kind: NotificationKind; actor_id: string; actor_name: string; activity_id: string | null;
-      activity_title: string | null; comment: string | null; created_at: Date; read_at: Date | null;
+      activity_title: string | null; challenge_id: string | null; challenge_title: string | null;
+      comment: string | null; created_at: Date; read_at: Date | null;
     }>(
       `SELECT n.id, n.kind, n.actor_id, u.name AS actor_name, n.activity_id, a.title AS activity_title,
-         c.body AS comment, n.created_at, n.read_at
+         n.challenge_id, ch.title AS challenge_title, c.body AS comment, n.created_at, n.read_at
        FROM notifications n
        JOIN users u ON u.id = n.actor_id
        LEFT JOIN activities a ON a.id = n.activity_id
+       LEFT JOIN custom_challenges ch ON ch.id = n.challenge_id
        LEFT JOIN comments c ON c.id = n.comment_id
        WHERE n.user_id = $1 AND ${noBlockBetween('$1', 'n.actor_id')} ORDER BY n.created_at DESC LIMIT 60`,
       [req.user.sub],
@@ -330,6 +332,7 @@ export async function socialRoutes(app: FastifyInstance) {
       kind: r.kind,
       actor: { id: r.actor_id, name: r.actor_name } satisfies AthleteRef,
       activity: r.activity_id ? { id: r.activity_id, title: r.activity_title ?? 'an activity' } : null,
+      challenge: r.challenge_id ? { id: r.challenge_id, title: r.challenge_title ?? 'a challenge' } : null,
       text: r.comment,
       createdAt: r.created_at.toISOString(),
       read: r.read_at !== null,

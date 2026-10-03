@@ -93,6 +93,8 @@ function RootNavigator() {
             <Stack.Screen name="messages/new" options={{ title: 'New Message', presentation: 'modal' }} />
             <Stack.Screen name="club/[id]" options={{ title: 'Club', headerBackTitle: 'Back' }} />
             <Stack.Screen name="clubs/new" options={{ title: 'Create a Club', presentation: 'modal' }} />
+            <Stack.Screen name="challenge/[id]" options={{ title: 'Challenge', headerBackTitle: 'Back' }} />
+            <Stack.Screen name="challenges/new" options={{ title: 'Create a Challenge', presentation: 'modal' }} />
             <Stack.Screen name="edit-profile" options={{ title: 'Edit Profile', presentation: 'modal' }} />
             <Stack.Screen name="blocked" options={{ title: 'Blocked People', headerBackTitle: 'Back' }} />
             <Stack.Screen name="delete-account" options={{ title: 'Delete Account', headerBackTitle: 'Back' }} />

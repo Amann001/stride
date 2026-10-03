@@ -21,6 +21,11 @@ export function currentMonth(tz: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit' }).format(new Date());
 }
 
+// Today's date in that time zone, as "2026-10-05".
+export function todayIn(tz: string): string {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+}
+
 const DAY_MS = 86_400_000;
 
 // "2026-10-05" plus a number of days, as another "YYYY-MM-DD".

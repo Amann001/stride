@@ -2,12 +2,15 @@ import { z } from 'zod';
 
 import { formatDistance } from './format';
 import { activityTypeSchema, type ActivityType } from './schemas';
+import type { AthleteRef } from './social';
 
 // Monthly challenges, like "October 50K Run". Every month gets a fresh set made from these
 // templates. Progress is worked out from your activities in that month, so nothing needs
 // to be entered by hand: join, go out, and watch the bar fill up.
+// People can also create their own challenge with any dates and invite friends to it.
 
-export type ChallengeMetric = 'distance' | 'time' | 'elevation' | 'activeDays' | 'longest';
+export const CHALLENGE_METRICS = ['distance', 'time', 'elevation', 'activeDays', 'longest'] as const;
+export type ChallengeMetric = (typeof CHALLENGE_METRICS)[number];
 
 export interface ChallengeTemplate {
   key: string;
@@ -74,6 +77,115 @@ export interface Challenge {
   completed: boolean;
   // How many Stride athletes have joined.
   participants: number;
+  // Set for a challenge someone created; null for the monthly ones.
+  custom: CustomChallengeInfo | null;
+}
+
+export interface CustomChallengeInfo {
+  // First and last day it counts (YYYY-MM-DD), both included.
+  startDate: string;
+  endDate: string;
+  creator: AthleteRef;
+  // You've been invited and haven't answered yet.
+  invited: boolean;
+  status: 'upcoming' | 'active' | 'ended';
+}
+
+export interface ChallengeLeader {
+  athlete: AthleteRef;
+  progress: number;
+  completed: boolean;
+}
+
+// A created challenge's own page.
+export interface CustomChallengeDetail extends Challenge {
+  custom: CustomChallengeInfo;
+  isCreator: boolean;
+  // Everyone who joined, furthest along first.
+  leaderboard: ChallengeLeader[];
+  // Invited people who haven't answered yet.
+  invited: AthleteRef[];
+}
+
+// ---------- Creating your own challenge ----------
+
+export const CHALLENGE_METRIC_LABELS: Record<ChallengeMetric, string> = {
+  distance: 'Total distance',
+  time: 'Total time',
+  elevation: 'Total climb',
+  activeDays: 'Active days',
+  longest: 'One long activity',
+};
+
+export const CUSTOM_CHALLENGE_MAX_DAYS = 92;
+export const CUSTOM_CHALLENGE_MAX_MEMBERS = 50;
+
+// The biggest goal allowed for each kind (same units as `goal`).
+const MAX_GOAL: Record<ChallengeMetric, number> = {
+  distance: 10_000_000,
+  time: 1000 * 3600,
+  elevation: 200_000,
+  activeDays: CUSTOM_CHALLENGE_MAX_DAYS,
+  longest: 1_000_000,
+};
+
+// How many days from `start` to `end` (YYYY-MM-DD), counting both.
+export function challengeDays(start: string, end: string): number {
+  return Math.round((Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86_400_000) + 1;
+}
+
+export const createCustomChallengeSchema = z
+  .object({
+    title: z.string().trim().min(3, 'Give your challenge a name').max(60),
+    // Null means every sport counts.
+    sport: activityTypeSchema.nullable(),
+    metric: z.enum(CHALLENGE_METRICS),
+    goal: z.number().positive('Set a goal'),
+    startDate: z.iso.date(),
+    endDate: z.iso.date(),
+    inviteIds: z.array(z.uuid()).max(CUSTOM_CHALLENGE_MAX_MEMBERS - 1).default([]),
+  })
+  .superRefine((c, ctx) => {
+    const days = challengeDays(c.startDate, c.endDate);
+    if (days < 1) ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'The end date must be on or after the start date' });
+    if (days > CUSTOM_CHALLENGE_MAX_DAYS) ctx.addIssue({ code: 'custom', path: ['endDate'], message: 'A challenge can last up to 3 months' });
+    if (c.goal > MAX_GOAL[c.metric]) ctx.addIssue({ code: 'custom', path: ['goal'], message: 'That goal is too big' });
+    if (c.metric === 'activeDays' && (!Number.isInteger(c.goal) || c.goal > days)) {
+      ctx.addIssue({ code: 'custom', path: ['goal'], message: `Pick a whole number of days, up to ${Math.max(days, 1)}` });
+    }
+  });
+
+export const inviteToChallengeSchema = z.object({ ids: z.array(z.uuid()).min(1).max(CUSTOM_CHALLENGE_MAX_MEMBERS - 1) });
+
+export type CreateCustomChallengeInput = z.infer<typeof createCustomChallengeSchema>;
+
+const SPORT_WORDS: Record<ActivityType, { verb: string; noun: string }> = {
+  run: { verb: 'Run', noun: 'run' },
+  ride: { verb: 'Ride', noun: 'ride' },
+  walk: { verb: 'Walk', noun: 'walk' },
+  hike: { verb: 'Hike', noun: 'hike' },
+};
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+// "2026-10-05" -> "5 Oct"
+export function formatChallengeDate(isoDate: string): string {
+  return `${Number(isoDate.slice(8, 10))} ${SHORT_MONTHS[Number(isoDate.slice(5, 7)) - 1] ?? ''}`;
+}
+
+// What a created challenge asks, e.g. "Run a total of 100 km from 5 Oct to 31 Oct."
+export function describeCustomChallenge(c: {
+  sport: ActivityType | null; metric: ChallengeMetric; goal: number; startDate: string; endDate: string;
+}): string {
+  const words = c.sport ? SPORT_WORDS[c.sport] : null;
+  const goal = formatChallengeValue(c.metric, c.goal);
+  const what = {
+    distance: words ? `${words.verb} a total of ${goal}` : `Cover a total of ${goal}, any sport`,
+    time: `Log ${goal} of ${words ? `${words.noun}s` : 'activity'}`,
+    elevation: `Climb a total of ${goal}${words ? ` on ${words.noun}s` : ''}`,
+    activeDays: words ? `${words.verb} on ${goal}` : `Be active on ${goal}`,
+    longest: `Complete a single ${words?.noun ?? 'activity'} of at least ${goal}`,
+  }[c.metric];
+  return `${what} from ${formatChallengeDate(c.startDate)} to ${formatChallengeDate(c.endDate)}.`;
 }
 
 // Progress or goal as text: "12.30 km", "250 min", "4 days", "320 m".

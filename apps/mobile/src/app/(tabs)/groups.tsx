@@ -12,13 +12,16 @@ import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 
 // Groups tab, like Strava's: Challenges (this month's, filter by sport, join and watch your
-// progress fill up) and Clubs (yours, and popular ones to join).
+// progress fill up; or create your own and invite friends) and Clubs (yours, and popular
+// ones to join).
 export default function GroupsScreen() {
   const colors = useColors();
   const [section, setSection] = useState<'challenges' | 'clubs'>('challenges');
   const [myClubs, setMyClubs] = useState<Club[]>([]);
   const [popular, setPopular] = useState<Club[]>([]);
   const [challenges, setChallenges] = useState<Challenge[] | null>(null);
+  // Created challenges you're in or invited to.
+  const [custom, setCustom] = useState<Challenge[]>([]);
   const [filter, setFilter] = useState<ActivityType | 'all'>('all');
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -28,6 +31,7 @@ export default function GroupsScreen() {
       setError(null);
       const [c, mine, all] = await Promise.all([api.getChallenges(), api.myClubs(), api.clubs()]);
       setChallenges(c.current);
+      setCustom(c.custom);
       setMyClubs(mine);
       setPopular(all.filter((x) => !x.isMember));
     } catch (err) {
@@ -42,8 +46,10 @@ export default function GroupsScreen() {
   );
 
   // "All sports" challenges show under every filter.
-  const shown = (challenges ?? []).filter((c) => filter === 'all' || c.sport === filter || c.sport === null);
-  const joined = shown.filter((c) => c.joined);
+  const matches = (c: Challenge) => filter === 'all' || c.sport === filter || c.sport === null;
+  const shown = (challenges ?? []).filter(matches);
+  const invites = custom.filter((c) => matches(c) && c.custom?.invited);
+  const joined = [...custom.filter((c) => matches(c) && c.joined), ...shown.filter((c) => c.joined)];
   const others = shown.filter((c) => !c.joined);
 
   return (
@@ -103,7 +109,22 @@ export default function GroupsScreen() {
           ))}
         </ScrollView>
 
+        <Pressable style={[styles.createClub, { backgroundColor: colors.card }]} onPress={() => router.push('/challenges/new')}>
+          <MaterialCommunityIcons name="flag-checkered" size={32} color={colors.accent} />
+          <View style={styles.createText}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Create a Challenge</Text>
+            <Text style={{ color: colors.textSecondary }}>Set your own goal and dates, and invite friends to take it on with you.</Text>
+          </View>
+        </Pressable>
+
         {error && <Text style={[styles.message, { color: colors.danger }]}>{error}</Text>}
+
+        {invites.length > 0 && (
+          <View style={[styles.section, { backgroundColor: colors.card }]}>
+            <Text style={[styles.sectionTitle, { color: colors.text }]}>Invites</Text>
+            {invites.map((c) => <ChallengeCard key={c.id} challenge={c} onChange={load} />)}
+          </View>
+        )}
 
         {joined.length > 0 && (
           <View style={[styles.section, { backgroundColor: colors.card }]}>

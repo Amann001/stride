@@ -4,60 +4,29 @@ import {
   challengeIdSchema,
   monthName,
   parseChallengeId,
-  type ActivityType,
   type Challenge,
   type ChallengesResponse,
-  type ChallengeTemplate,
 } from '@repo/shared';
 import type { FastifyInstance } from 'fastify';
 import { z } from 'zod';
 
+import { progressFor, TOTALS_COLUMNS, type TotalsRow } from '../challenge-progress';
 import { pool } from '../db';
 import { currentMonth, safeTimeZone, tzQuery } from '../time';
-
-interface MonthRow {
-  type: ActivityType;
-  distance: number;
-  moving: number;
-  elev: number;
-  longest: number;
-  days: string[];
-}
+import { myCustomChallenges } from './custom-challenges';
 
 // Your totals for each kind of activity in one calendar month ("2026-10"), in your time zone.
-async function monthTotals(userId: string, tz: string, month: string): Promise<MonthRow[]> {
-  const { rows } = await pool.query<MonthRow>(
-    `SELECT type,
-       sum(distance_meters)::float AS distance,
-       sum(moving_seconds)::float AS moving,
-       sum(elevation_gain_meters)::float AS elev,
-       max(distance_meters)::float AS longest,
-       array_agg(DISTINCT to_char(started_at AT TIME ZONE $2, 'YYYY-MM-DD')) AS days
-     FROM activities
-     WHERE user_id = $1
-       AND started_at >= ($3::timestamp AT TIME ZONE $2)
-       AND started_at < (($3::timestamp + interval '1 month') AT TIME ZONE $2)
-     GROUP BY type`,
+async function monthTotals(userId: string, tz: string, month: string): Promise<TotalsRow[]> {
+  const { rows } = await pool.query<TotalsRow>(
+    `SELECT ${TOTALS_COLUMNS('$2')}
+     FROM activities a
+     WHERE a.user_id = $1
+       AND a.started_at >= ($3::timestamp AT TIME ZONE $2)
+       AND a.started_at < (($3::timestamp + interval '1 month') AT TIME ZONE $2)
+     GROUP BY a.type`,
     [userId, tz, `${month}-01`],
   );
   return rows;
-}
-
-function progressFor(template: ChallengeTemplate, rows: MonthRow[]): number {
-  const counted = rows.filter((r) => template.sport === null || r.type === template.sport);
-  const sum = (f: (r: MonthRow) => number) => counted.reduce((n, r) => n + f(r), 0);
-  switch (template.metric) {
-    case 'distance':
-      return sum((r) => r.distance);
-    case 'time':
-      return sum((r) => r.moving);
-    case 'elevation':
-      return sum((r) => r.elev);
-    case 'longest':
-      return Math.max(0, ...counted.map((r) => r.longest));
-    case 'activeDays':
-      return new Set(counted.flatMap((r) => r.days)).size;
-  }
 }
 
 const idParams = z.object({ id: challengeIdSchema });
@@ -105,12 +74,17 @@ export async function challengeRoutes(app: FastifyInstance) {
         progress,
         completed: joined.has(id) && progress >= template.goal,
         participants: participants.get(id) ?? 0,
+        custom: null,
       };
     };
 
+    const custom = await myCustomChallenges(userId);
     return {
       current: currentIds.map(build),
-      completed: [...joined].map(build).filter((c) => c.completed).sort((a, b) => b.month.localeCompare(a.month)),
+      completed: [...[...joined].map(build), ...custom]
+        .filter((c) => c.completed)
+        .sort((a, b) => b.month.localeCompare(a.month)),
+      custom: custom.filter((c) => c.custom?.status !== 'ended'),
     };
   });
 
