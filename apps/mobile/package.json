@@ -46,7 +46,8 @@
   "devDependencies": {
     "@types/react": "~19.2.2",
     "eslint-config-expo": "~57.0.2",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
   },
   "scripts": {
     "start": "expo start",
@@ -55,6 +56,7 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "typecheck": "tsc --noEmit",
+    "test": "vitest run",
     "publish:ios": "npx eas-cli@latest update --channel production --platform ios --environment production --auto --non-interactive",
     "publish:android": "npx eas-cli@latest update --channel production --platform android --environment production --auto --non-interactive",
     "build:android": "npx eas-cli@latest build --platform android --profile android-apk --non-interactive --no-wait"

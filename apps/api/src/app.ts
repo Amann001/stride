@@ -42,7 +42,8 @@ export async function buildApp() {
   // address arrives in X-Forwarded-For. Needed for per-person rate limits.
   const app = Fastify({
     trustProxy: true,
-    logger: {
+    // No request logs while the automated tests run (Vitest sets VITEST).
+    logger: process.env.VITEST ? false : {
       // Request logs never include the heatmap access key that map tiles carry in their URL.
       serializers: {
         req: (req) => ({

@@ -1,0 +1,35 @@
+# Checks every push and pull request: type checks, the automated tests and the app's lint.
+# The tests use their own in-memory database, so they never touch the real one and need no
+# secrets. A red cross on GitHub means something broke; the log says what.
+name: Checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  checks:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Type check
+        run: npm run typecheck
+      - name: Tests
+        run: npm test
+      - name: Lint the app
+        run: npx expo lint
+        working-directory: apps/mobile

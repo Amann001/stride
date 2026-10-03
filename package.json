@@ -11,6 +11,7 @@
     "dev:mobile": "npm run start --workspace mobile",
     "db:migrate": "npm run migrate --workspace api",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "publish:app": "npm run publish:ios --workspace mobile && npm run publish:android --workspace mobile",
     "build:android": "npm run build:android --workspace mobile",
     "ops": "npm run ops --workspace api --"

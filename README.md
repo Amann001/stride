@@ -126,6 +126,25 @@ installed apps through `npm run publish:app`.
 - Google plans to require developer verification for apps installed outside the Play Store;
   it starts outside India first (expected in India in 2027).
 
+## Tests
+
+```bash
+npm test
+```
+
+Runs every automated test (about 30 seconds):
+
+| Where | What it checks |
+|---|---|
+| `apps/api/test` | The server, end to end: sign-up, login, password reset and email change (with a pretend mailbox), recording activities (distance, PRs, GPS glitches, duplicate uploads), who can see what (Everyone / Followers / Only you, the 200 m privacy zone), follows, feed, kudos, comments, notifications, blocking, reports, messages, clubs, monthly and created challenges, stats, goals, saved routes, heatmap keys |
+| `packages/shared/test` | The maths and rules both apps share: GPS distance, glitch removal, climbing, polylines, privacy zone, splits, best efforts, achievements, formatting, form checks |
+| `apps/mobile/test` | The phone's offline outbox (a run recorded without signal is never lost or uploaded twice) and the stats shown on cards |
+
+The server tests start their own throwaway Postgres in memory (PGlite) and run the real
+migrations on it. They never read `.env` and refuse to run against anything but this computer,
+so they can't touch the live database. GitHub runs the type checks, all tests and the app's lint on
+every push (`.github/workflows/ci.yml`); a red cross on the commit means something broke.
+
 ## Running Stride (owner checklist)
 
 - **Weekly:** `npm run ops` shows open reports and the last week's crashes/errors.

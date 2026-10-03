@@ -179,7 +179,7 @@ export function describeCustomChallenge(c: {
   const words = c.sport ? SPORT_WORDS[c.sport] : null;
   const goal = formatChallengeValue(c.metric, c.goal);
   const what = {
-    distance: words ? `${words.verb} a total of ${goal}` : `Cover a total of ${goal}, any sport`,
+    distance: words ? `${words.verb} a total of ${goal}` : `Cover a total of ${goal} (any sport)`,
     time: `Log ${goal} of ${words ? `${words.noun}s` : 'activity'}`,
     elevation: `Climb a total of ${goal}${words ? ` on ${words.noun}s` : ''}`,
     activeDays: words ? `${words.verb} on ${goal}` : `Be active on ${goal}`,
