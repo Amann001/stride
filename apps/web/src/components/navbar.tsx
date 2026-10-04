@@ -26,9 +26,14 @@ export function Navbar() {
             </button>
           </div>
         ) : (
-          <Link href="/login" className="text-sm font-semibold text-brand hover:underline">
-            Log in
-          </Link>
+          <div className="flex items-center gap-5 text-sm">
+            <Link href="/download" className="text-zinc-300 hover:text-white">
+              Get the app
+            </Link>
+            <Link href="/login" className="font-semibold text-brand hover:underline">
+              Log in
+            </Link>
+          </div>
         )}
       </nav>
     </header>

@@ -21,11 +21,16 @@ export default function Home() {
         Record every run. <span className="text-accent">See every mile.</span>
       </h1>
       <p className="mt-4 max-w-xl text-lg text-zinc-500">
-        Track your activities with the iPhone app, then look back at your routes and stats here.
+        Track your activities with the Stride app, then look back at your routes and stats here.
       </p>
-      <Link href="/login" className="mt-8 rounded-lg bg-brand px-6 py-3 font-semibold text-brand-ink hover:opacity-90">
-        Get started
-      </Link>
+      <div className="mt-8 flex flex-wrap justify-center gap-3">
+        <Link href="/login" className="rounded-lg bg-brand px-6 py-3 font-semibold text-brand-ink hover:opacity-90">
+          Get started
+        </Link>
+        <Link href="/download" className="rounded-lg border border-zinc-400 px-6 py-3 font-semibold hover:border-accent dark:border-zinc-700">
+          Get the Android app
+        </Link>
+      </div>
     </section>
   );
 }
