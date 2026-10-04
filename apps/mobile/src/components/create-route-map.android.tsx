@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 
 import type { CreateRouteMapProps } from '@/components/create-route-map';
 import { INK, LIME, useColors } from '@/constants/theme';
-import { mapStyleUrl } from '@/lib/android-map-style';
+import { mapStyleFor } from '@/lib/android-map-style';
 
 // Android version of the Create Route map (create-route-map.tsx is the iPhone one).
 
@@ -26,7 +26,7 @@ export function CreateRouteMap({ mapStyle, points, line, onAddPoint, ref }: Crea
   return (
     <Map
       style={StyleSheet.absoluteFill}
-      mapStyle={mapStyleUrl(mapStyle)}
+      mapStyle={mapStyleFor(mapStyle)}
       compass={false}
       logo={false}
       onPress={(e) => {

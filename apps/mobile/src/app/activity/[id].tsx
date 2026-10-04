@@ -26,6 +26,7 @@ import { useColors } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { detailStats } from '@/lib/activity-stats';
 import { api } from '@/lib/api';
+import { formatFullDateTime } from '@/lib/dates';
 
 // One activity: route map, achievements, and a breakdown that fits the kind of activity
 // (splits and best efforts for runs and rides, the hill profile first for hikes).
@@ -64,7 +65,7 @@ export default function ActivityScreen() {
   if (error) return <Text style={[styles.center, { color: colors.danger }]}>{error}</Text>;
   if (!activity) return <ActivityIndicator style={styles.center} color={colors.accent} />;
 
-  const date = new Date(activity.startedAt).toLocaleString(undefined, { dateStyle: 'full', timeStyle: 'short' });
+  const date = formatFullDateTime(activity.startedAt);
   const highest = profile.length ? Math.max(...profile.map((p) => p.altitude)) : null;
   const stats = detailStats(activity, highest);
   const statRows = Array.from({ length: Math.ceil(stats.length / 3) }, (_, i) => stats.slice(i * 3, i * 3 + 3));

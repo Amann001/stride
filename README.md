@@ -123,10 +123,14 @@ The finished build has a download link and QR code on expo.dev. Only rebuild whe
 code changes (new native packages, app.json permissions or icons); everything else reaches
 installed apps through `npm run publish:app`.
 
-- Maps on Android use MapLibre with free OpenFreeMap tiles (no account or key). iPhone uses
-  Apple Maps. Each map is a component with an `.android.tsx` twin (`route-map`,
+- Maps on Android use MapLibre with free OpenFreeMap tiles (no account or key): Standard, Dark
+  and Muted, plus Satellite from EOxCloudless 2016 (Sentinel-2 photos, CC BY 4.0, free even
+  commercially; later years are non-commercial only). iPhone uses Apple Maps; its Dark type is the
+  standard map in dark mode. Each map is a component with an `.android.tsx` twin (`route-map`,
   `maps-tab-map`, `create-route-map`); keep both in step.
 - Android has no `Alert.prompt`; use `promptText()` from `components/text-prompt.tsx`.
+- Don't format dates with `toLocaleString` in the app: on Android, Hermes doesn't know the phone's
+  time zone and shows wrong times. Use the helpers in `apps/mobile/src/lib/dates.ts`.
 - Google plans to require developer verification for apps installed outside the Play Store;
   it starts outside India first (expected in India in 2027).
 
@@ -136,13 +140,13 @@ installed apps through `npm run publish:app`.
 npm test
 ```
 
-Runs every automated test (133 of them, about 30 seconds):
+Runs every automated test (142 of them, about 30 seconds):
 
 | Where | What it checks |
 |---|---|
 | `apps/api/test` | The server, end to end: sign-up, login, password reset and email change (with a pretend mailbox), recording activities (distance, PRs, GPS glitches, duplicate uploads), who can see what (Everyone / Followers / Only you, the 200 m privacy zone), follows, feed, kudos, comments, notifications, blocking, reports, messages, clubs, monthly and created challenges, stats, goals, saved routes, heatmap keys, push notifications (what's sent, to which phones, not after logout or a block, dead phones removed) |
 | `packages/shared/test` | The maths and rules both apps share: GPS distance, glitch removal, climbing, polylines, privacy zone, splits, best efforts, achievements, formatting, form checks |
-| `apps/mobile/test` | The phone's offline outbox (a run recorded without signal is never lost or uploaded twice), push sign-up and logout, and the stats shown on cards |
+| `apps/mobile/test` | The phone's offline outbox (a run recorded without signal is never lost or uploaded twice), push sign-up and logout, dates in the phone's own time zone, the map types (free sources only), and the stats shown on cards |
 
 The server tests start their own throwaway Postgres in memory (PGlite) and run the real
 migrations on it. They never read `.env` and refuse to run against anything but this computer,

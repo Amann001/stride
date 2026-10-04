@@ -19,6 +19,7 @@ import { SafetyMenu } from '@/components/safety-menu';
 import { INK, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { formatWeekdayTime } from '@/lib/dates';
 
 const POLL_MS = 3000;
 
@@ -145,7 +146,7 @@ export default function ChatScreen() {
               <View>
                 {showTime && item.kind === 'message' && (
                   <Text style={[styles.time, { color: colors.textSecondary }]}>
-                    {new Date(item.m.createdAt).toLocaleString(undefined, { weekday: 'short', hour: 'numeric', minute: '2-digit' })}
+                    {formatWeekdayTime(item.m.createdAt)}
                   </Text>
                 )}
                 <View style={[styles.bubble, mine

@@ -2,6 +2,7 @@ import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { StyleSheet, Text, View } from 'react-native';
 
 import { useColors } from '@/constants/theme';
+import { monthName } from '@/lib/dates';
 
 const pad = (n: number) => String(n).padStart(2, '0');
 const isoDate = (d: Date) => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
@@ -21,7 +22,7 @@ export function StreakCalendar({ streakWeeks, activeDates }: { streakWeeks: numb
     ...Array.from({ length: daysInMonth }, (_, i) => isoDate(new Date(today.getFullYear(), today.getMonth(), i + 1))),
   ];
   const rows = Array.from({ length: Math.ceil(cells.length / 7) }, (_, r) => cells.slice(r * 7, r * 7 + 7));
-  const monthLabel = today.toLocaleDateString(undefined, { month: 'long' });
+  const monthLabel = monthName(today);
 
   return (
     <View style={[styles.card, { backgroundColor: colors.card }]}>

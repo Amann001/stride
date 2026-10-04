@@ -6,7 +6,14 @@ import { storage } from '@/lib/storage';
 // How the Maps tab looks: map style, which heatmap is on, and extra layers. Saved on the
 // phone so the map looks the same next time you open the app.
 
-export type MapStyle = 'standard' | 'satellite' | 'hybrid' | 'mutedStandard';
+export type MapStyle = 'standard' | 'dark' | 'satellite' | 'hybrid' | 'mutedStandard';
+
+// Apple Maps (iPhone) has no separate dark map: "Dark" is its standard map drawn in dark mode.
+export function appleMapProps(style: MapStyle) {
+  return style === 'dark'
+    ? { mapType: 'standard' as const, userInterfaceStyle: 'dark' as const }
+    : { mapType: style };
+}
 
 export interface MapPrefs {
   mapStyle: MapStyle;

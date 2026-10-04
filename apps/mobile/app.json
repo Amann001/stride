@@ -2,7 +2,7 @@
   "expo": {
     "name": "Stride",
     "slug": "stride",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "stride",
@@ -29,7 +29,7 @@
       ],
       "package": "com.amanswamy.stride",
       "googleServicesFile": "./google-services.json",
-      "versionCode": 2,
+      "versionCode": 3,
       "runtimeVersion": {
         "policy": "appVersion"
       },
@@ -91,7 +91,8 @@
           "contactsPermission": "We use your contacts so you can invite friends to Stride. They're never uploaded."
         }
       ],
-      "@maplibre/maplibre-react-native"
+      "@maplibre/maplibre-react-native",
+      "expo-localization"
     ],
     "experiments": {
       "typedRoutes": true,

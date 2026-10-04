@@ -33,6 +33,7 @@ import { CATEGORY_LOOKS, type IconName } from '@/constants/categories';
 import { INK, LIME, useColors } from '@/constants/theme';
 import { API_URL, api, privacyUrl, termsUrl } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { formatDate } from '@/lib/dates';
 
 type Section = 'progress' | 'activities' | 'more';
 
@@ -408,7 +409,7 @@ function RecordRow({ icon, iconColor, label, record, value, detail, dim = false 
   icon: IconName; iconColor: string; label: string; record: PersonalRecord; value: string; detail?: string; dim?: boolean;
 }) {
   const colors = useColors();
-  const date = new Date(record.startedAt).toLocaleDateString(undefined, { dateStyle: 'medium' });
+  const date = formatDate(record.startedAt);
   const text = dim ? colors.textSecondary : colors.text;
   return (
     <Pressable style={styles.record}

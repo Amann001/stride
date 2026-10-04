@@ -34,6 +34,8 @@ import type {
 
 import Constants from 'expo-constants';
 
+import { deviceTimeZone } from './dates';
+
 // Works out where the API lives.
 // - Published app (EAS Update / store build): EXPO_PUBLIC_API_URL from .env.production,
 //   i.e. the cloud server, so it works anywhere on Wi-Fi or mobile data.
@@ -132,7 +134,8 @@ async function request<T>(path: string, options: { method?: string; body?: unkno
 }
 
 // Sent with anything week- or month-based, so "this week" starts on your Monday, not the server's.
-const TZ = `tz=${encodeURIComponent(Intl.DateTimeFormat().resolvedOptions().timeZone)}`;
+// The phone's time zone, for "this week" and challenge dates (see deviceTimeZone).
+const TZ = `tz=${encodeURIComponent(deviceTimeZone())}`;
 
 export const api = {
   register: (name: string, email: string, password: string) =>

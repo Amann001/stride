@@ -8,6 +8,7 @@ import { Medal, MEDAL_COLORS } from '@/components/achievements';
 import { Avatar } from '@/components/avatar';
 import { useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
+import { formatDateTime as when } from '@/lib/dates';
 
 type Item =
   | { key: string; at: string; kind: 'social'; n: Notification }
@@ -53,7 +54,6 @@ export default function NotificationsScreen() {
     }, []),
   );
 
-  const when = (iso: string) => new Date(iso).toLocaleString(undefined, { dateStyle: 'medium', timeStyle: 'short' });
 
   return (
     <FlatList

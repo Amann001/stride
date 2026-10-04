@@ -11,11 +11,12 @@ import { updateMapPrefs, useMapPrefs, type MapStyle } from '@/lib/map-prefs';
 
 const MAP_STYLES: { key: MapStyle; label: string }[] = [
   { key: 'standard', label: 'Standard' },
+  { key: 'dark', label: 'Dark' },
   { key: 'satellite', label: 'Satellite' },
   { key: 'hybrid', label: 'Hybrid' },
   { key: 'mutedStandard', label: 'Muted' },
 ];
-// Android maps (free OpenFreeMap) have no satellite imagery, so only Standard and Muted there.
+// Android has no hybrid (satellite with roads on top); see android-map-style.ts.
 const AVAILABLE_STYLES = Platform.OS === 'android' ? MAP_STYLES.filter((m) => ANDROID_MAP_STYLES.includes(m.key)) : MAP_STYLES;
 
 // Colours for the little heatmap pictures, matching the real tiles.
@@ -36,6 +37,13 @@ function Picture({ kind }: { kind: string }) {
       <>
         <Rect width={72} height={72} fill="#2B3440" />
         <Path d="M0 24 H72 M0 50 H72 M24 0 V72 M52 0 V72" stroke="#4A5566" strokeWidth={4} />
+        <Path d={SQUIGGLE} stroke="#C8F31D" strokeWidth={3} fill="none" />
+      </>
+    ),
+    dark: (
+      <>
+        <Rect width={72} height={72} fill="#0E0F12" />
+        <Path d="M0 24 H72 M0 50 H72 M24 0 V72 M52 0 V72" stroke="#25272D" strokeWidth={4} />
         <Path d={SQUIGGLE} stroke="#C8F31D" strokeWidth={3} fill="none" />
       </>
     ),

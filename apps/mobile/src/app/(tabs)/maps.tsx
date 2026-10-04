@@ -41,6 +41,7 @@ import { api, heatmapTileUrl } from '@/lib/api';
 import { useMapPrefs, type MapStyle } from '@/lib/map-prefs';
 import { storage } from '@/lib/storage';
 import { rememberRoutes, toggleSaved, useSavedCopies } from '@/lib/route-store';
+import { formatDate } from '@/lib/dates';
 
 type Mode = 'routes' | 'activities';
 
@@ -373,7 +374,7 @@ export default function MapsScreen() {
                 <View style={styles.selectedText}>
                   <Text style={{ color: colors.text, fontWeight: '700' }}>{activity.title}</Text>
                   <Text style={{ color: colors.textSecondary, fontSize: 12 }}>
-                    {formatDistance(activity.distanceMeters)} · {new Date(activity.startedAt).toLocaleDateString(undefined, { dateStyle: 'medium' })}
+                    {formatDistance(activity.distanceMeters)} · {formatDate(activity.startedAt)}
                   </Text>
                 </View>
               </Pressable>
@@ -468,7 +469,7 @@ export default function MapsScreen() {
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 const LAYERS_HINT_KEY = 'seen_layers_hint';
-const STYLE_NAMES: Record<MapStyle, string> = { standard: 'Standard', satellite: 'Satellite', hybrid: 'Hybrid', mutedStandard: 'Muted' };
+const STYLE_NAMES: Record<MapStyle, string> = { standard: 'Standard', dark: 'Dark', satellite: 'Satellite', hybrid: 'Hybrid', mutedStandard: 'Muted' };
 
 function Chip({ label, active, dropdown, icon, onPress }: {
   label: string; active: boolean; dropdown?: boolean; icon?: IconName; onPress: () => void;

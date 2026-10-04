@@ -4,7 +4,7 @@ import type { FastifyInstance } from 'fastify';
 // thinking of joining) can read them at /privacy and /terms. Keep them in step with what
 // the app really does: if a feature starts collecting something new, update this first.
 
-const UPDATED = '2 October 2026';
+const UPDATED = '4 October 2026';
 
 // Optional contact address for privacy requests (set CONTACT_EMAIL on the server).
 // Left out of the code on purpose, so no personal address ends up in the repository.
@@ -36,7 +36,9 @@ const privacy = () =>
 <ul>
 <li><b>Account:</b> your name, email address and password. The password is stored only as a secure hash, never as plain text. Optionally, a bio and a location you type in.</li>
 <li><b>Activities:</b> the GPS track of each activity you record (positions, times, altitude), plus distance, time, pace, elevation and, for runs, walks and hikes, a step count from your phone's motion sensor.</li>
-<li><b>Social:</b> who you follow, kudos, comments, private messages, clubs you create or join, routes you save, challenges you join, and reports you send.</li>
+<li><b>Social:</b> who you follow, kudos, comments, private messages, clubs you create or join, routes you save, challenges you create, join or are invited to, and reports you send.</li>
+<li><b>Notifications:</b> if you allow notifications on Android, a push address for your phone, so we can send you notifications. It's deleted when you log out.</li>
+<li><b>Crash reports:</b> when the app crashes, what went wrong and on which screen, without your account, location or activities.</li>
 </ul>
 
 <h2>Permissions on your phone</h2>
@@ -60,13 +62,16 @@ const privacy = () =>
 <h2>Services we use</h2>
 <ul>
 <li><b>Render</b> (servers) and <b>Neon</b> (database) store and process your data, in Singapore.</li>
+<li><b>Vercel</b> hosts the Stride website.</li>
 <li><b>Expo</b> delivers the app and its updates to your phone.</li>
-<li><b>Apple Maps</b> (iPhone) or <b>Google Maps</b> (Android) show the maps; they receive the map area you're looking at.</li>
+<li><b>Push notifications</b> go through <b>Expo's push service</b> and <b>Google Firebase Cloud Messaging</b> to your Android phone. They receive your phone's push address and the notification's text (for example "Asha commented: Great run!").</li>
+<li><b>Brevo</b> sends our emails (password-reset and email-change codes); it receives your email address and that message.</li>
+<li><b>Maps:</b> <b>Apple Maps</b> on iPhone; on Android, <b>OpenFreeMap</b> (street maps) and <b>EOX</b> (satellite photos). Like any online map, they receive the map area being shown and your phone's internet address, but never your name, account or activities.</li>
 <li>For suggested and planned routes, the points of the route are sent to <b>OpenStreetMap routing (FOSSGIS)</b> and <b>Open-Meteo</b> (elevation). Route data © OpenStreetMap contributors.</li>
 </ul>
 
 <h2>How long we keep it</h2>
-<p>Until you delete it. Deleting an activity removes it straight away. <b>Deleting your account</b> (Settings → Delete account) permanently erases your account and everything linked to it: activities, routes, follows, kudos, comments, messages and clubs you created. Short-term database backups kept by our provider are overwritten within a few days.</p>
+<p>Until you delete it. Deleting an activity removes it straight away. <b>Deleting your account</b> (Settings → Delete account) permanently erases your account and everything linked to it: activities, routes, follows, kudos, comments, messages and clubs you created. Our encrypted weekly backups are kept for 90 days, so deleted data is gone from them within 90 days; our database provider's own short-term backups are overwritten within a few days.</p>
 
 <h2>Your rights</h2>
 <p>You can see and edit your profile and activities in the app, change who can see each activity, and delete your account at any time. You can ask us about your data using the contact below.</p>

@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, Polyline, UrlTile, type Region } from 'react-native-maps';
 
 import { INK, LIME } from '@/constants/theme';
-import type { MapStyle } from '@/lib/map-prefs';
+import { appleMapProps, type MapStyle } from '@/lib/map-prefs';
 
 // The map on the Maps tab: route suggestions you can tap, your activities, heatmap and
 // bike-lane layers. This is the iPhone version, on Apple Maps; maps-tab-map.android.tsx is
@@ -56,7 +56,7 @@ export function MapsTabMap(props: MapsTabMapProps) {
     <MapView
       ref={mapRef}
       style={StyleSheet.absoluteFill}
-      mapType={mapStyle}
+      {...appleMapProps(mapStyle)}
       showsUserLocation
       showsPointsOfInterests={pois}
       showsBuildings

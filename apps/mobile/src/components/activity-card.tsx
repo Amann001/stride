@@ -12,6 +12,7 @@ import { useColors } from '@/constants/theme';
 import { cardStats } from '@/lib/activity-stats';
 import { api } from '@/lib/api';
 import { useAuth } from '@/lib/auth';
+import { formatLongDateTime } from '@/lib/dates';
 
 // Opens the iPhone share sheet with a short summary, e.g. to send to a friend.
 export function shareActivity(a: ActivitySummary) {
@@ -57,7 +58,7 @@ export function KudosButton({ activity, onChange }: { activity: ActivitySummary;
 export function ActivityCard({ activity }: { activity: ActivitySummary }) {
   const colors = useColors();
   const route = useMemo(() => decodePolyline(activity.polyline), [activity.polyline]);
-  const date = new Date(activity.startedAt).toLocaleString(undefined, { dateStyle: 'long', timeStyle: 'short' });
+  const date = formatLongDateTime(activity.startedAt);
   const [headline, ...others] = activity.achievements;
   const openAthlete = () => router.push({ pathname: '/athlete/[id]', params: { id: activity.athlete.id } });
 

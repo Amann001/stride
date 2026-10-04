@@ -4,7 +4,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import MapView, { Marker, Polyline, type MapPressEvent } from 'react-native-maps';
 
 import { INK, LIME, useColors } from '@/constants/theme';
-import type { MapStyle } from '@/lib/map-prefs';
+import { appleMapProps, type MapStyle } from '@/lib/map-prefs';
 
 // The map on Create Route: tap to add numbered points, with the planned line drawn
 // between them. iPhone version (Apple Maps); create-route-map.android.tsx is the Android one.
@@ -38,7 +38,7 @@ export function CreateRouteMap({ mapStyle, points, line, onAddPoint, ref }: Crea
   };
 
   return (
-    <MapView ref={mapRef} style={StyleSheet.absoluteFill} mapType={mapStyle} showsUserLocation onPress={addPoint}>
+    <MapView ref={mapRef} style={StyleSheet.absoluteFill} {...appleMapProps(mapStyle)} showsUserLocation onPress={addPoint}>
       {line.length > 1 && <Polyline coordinates={line.map(toCoord)} strokeColor={INK} strokeWidth={8} />}
       {line.length > 1 && <Polyline coordinates={line.map(toCoord)} strokeColor={LIME} strokeWidth={5} />}
       {points.map((p, i) => (

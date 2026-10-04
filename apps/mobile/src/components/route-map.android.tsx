@@ -14,7 +14,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 
 import { INK, LIME } from '@/constants/theme';
-import { mapStyleUrl } from '@/lib/android-map-style';
+import { mapStyleFor } from '@/lib/android-map-style';
 
 // Android version of RouteMap (route-map.tsx is the iPhone one, on Apple Maps). Same props,
 // drawn with MapLibre on free OpenFreeMap maps, so no Google account or key is needed.
@@ -54,7 +54,7 @@ function Dot({ color }: { color: string }) {
 
 export function RouteMap({ coords, follow = false, preview = false, guide, style }: Props) {
   const cameraRef = useRef<CameraRef>(null);
-  const mapStyle = mapStyleUrl('standard');
+  const mapStyle = mapStyleFor('standard');
   const first = coords[0];
   const last = coords[coords.length - 1];
   const isLoop = coords.length > 1 && distanceBetween(coords[0], coords[coords.length - 1]) < LOOP_METERS;

@@ -15,7 +15,7 @@ import { StyleSheet, View } from 'react-native';
 
 import type { MapsTabMapProps } from '@/components/maps-tab-map';
 import { INK, LIME } from '@/constants/theme';
-import { mapStyleUrl } from '@/lib/android-map-style';
+import { mapStyleFor } from '@/lib/android-map-style';
 
 // Android version of the Maps tab map (maps-tab-map.tsx is the iPhone one). Same props,
 // drawn with MapLibre on free OpenFreeMap maps.
@@ -62,7 +62,7 @@ export function MapsTabMap(props: MapsTabMapProps) {
     <Map
       ref={mapRef}
       style={StyleSheet.absoluteFill}
-      mapStyle={mapStyleUrl(mapStyle)}
+      mapStyle={mapStyleFor(mapStyle)}
       compass={false}
       logo={false}
       onPress={props.onMapPress}
