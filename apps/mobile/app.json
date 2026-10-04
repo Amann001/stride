@@ -28,6 +28,7 @@
         "android.permission.ACTIVITY_RECOGNITION"
       ],
       "package": "com.amanswamy.stride",
+      "googleServicesFile": "./google-services.json",
       "versionCode": 2,
       "runtimeVersion": {
         "policy": "appVersion"
