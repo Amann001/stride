@@ -41,3 +41,19 @@ describe('dates and times in the phone\'s own time zone', () => {
     expect(dates.deviceTimeZone()).toBe('Asia/Kolkata');
   });
 });
+
+describe('a phone with wrong time settings', () => {
+  it("shows server times the way the phone's own clock would", async () => {
+    const clock = await import('@/lib/clock');
+    // The phone reads 12½ hours ahead of the server's real time.
+    const real = Date.parse('2026-10-04T09:00:00Z');
+    clock.noteServerTime(new Date(real).toUTCString(), real + 12.5 * 3600_000 - 300, real + 12.5 * 3600_000 + 300);
+    expect(clock.clockSkew()).toBe(12.5 * 3600_000);
+    // In India time 08:59 UTC is 2:29 pm; this phone shows it 12½ hours later on its own clock.
+    expect(dates.formatTime(FOLLOW)).toBe('2:59 am');
+    // A phone that's right (within 2 minutes) is left alone.
+    clock.noteServerTime(new Date(real).toUTCString(), real + 60_000, real + 61_000);
+    expect(clock.clockSkew()).toBe(0);
+    expect(dates.formatTime(FOLLOW)).toBe('2:29 pm');
+  });
+});

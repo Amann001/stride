@@ -90,6 +90,9 @@ export const createActivitySchema = z.object({
   // A unique tag made by the phone for this recording. Sending the same tag again returns the
   // activity saved the first time instead of a duplicate, so uploads are safe to retry.
   clientId: z.string().min(8).max(64).optional(),
+  // The phone's clock (ms) when it sent this. If it's off from real time (wrong time settings),
+  // the server shifts the activity's times by the difference. Older app versions leave it out.
+  deviceNow: z.number().int().positive().optional(),
 });
 
 // Who can see an activity. Only "everyone" activities go into the shared heatmaps.

@@ -34,6 +34,7 @@ import type {
 
 import Constants from 'expo-constants';
 
+import { noteServerTime } from './clock';
 import { deviceTimeZone } from './dates';
 
 // Works out where the API lives.
@@ -115,7 +116,9 @@ async function request<T>(path: string, options: { method?: string; body?: unkno
   let res: Response | undefined;
   for (let i = 0; i < tries; i++) {
     try {
+      const sentAt = Date.now();
       res = await attempt(path, init);
+      noteServerTime(res.headers.get('date'), sentAt, Date.now());
       // 502/503/504 = the server is restarting or waking up; worth another go for reads.
       if (i < tries - 1 && res.status >= 502 && res.status <= 504) {
         await new Promise((r) => setTimeout(r, 2000 * (i + 1)));
@@ -134,7 +137,7 @@ async function request<T>(path: string, options: { method?: string; body?: unkno
 }
 
 // Sent with anything week- or month-based, so "this week" starts on your Monday, not the server's.
-// The phone's time zone, for "this week" and challenge dates (see deviceTimeZone).
+// The phone's own time zone (see deviceTimeZone).
 const TZ = `tz=${encodeURIComponent(deviceTimeZone())}`;
 
 export const api = {
@@ -145,11 +148,13 @@ export const api = {
   me: () => request<User>('/me'),
   listActivities: () => request<ActivitySummary[]>('/activities'),
   getActivity: (id: string) => request<ActivityDetail>(`/activities/${id}`),
+  // Uploads carry the phone's "now", so the server can put right the times of a phone whose
+  // clock is wrong (see clock.ts). Taken at send time, so retries from the outbox stay right too.
   createActivity: (input: CreateActivityInput) =>
-    request<ActivitySummary>('/activities', { method: 'POST', body: input }),
+    request<ActivitySummary>('/activities', { method: 'POST', body: { ...input, deviceNow: Date.now() } }),
   deleteActivity: (id: string) => request<void>(`/activities/${id}`, { method: 'DELETE' }),
   createManualActivity: (input: ManualActivityInput) =>
-    request<ActivitySummary>('/activities/manual', { method: 'POST', body: input }),
+    request<ActivitySummary>('/activities/manual', { method: 'POST', body: { ...input, deviceNow: Date.now() } }),
   updateProfile: (input: { name: string; bio?: string; location?: string }) =>
     request<User>('/me', { method: 'PATCH', body: input }),
   getStats: () => request<UserStats>(`/stats?${TZ}`),

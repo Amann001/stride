@@ -1,16 +1,19 @@
 import { getCalendars } from 'expo-localization';
 
+import { toPhoneTime } from './clock';
+
 // Dates and times as people read them, e.g. "4 Oct 2026, 2:29 pm".
 //
-// Why not toLocaleString? On Android, the JavaScript engine (Hermes) doesn't know the phone's
-// time zone, so toLocaleString showed times in the wrong zone (a 2:29 pm follow appeared as
-// 1:59 am). A Date's own getHours/getDate/... do follow the phone's clock, so we build the
-// text from those.
+// Why not toLocaleString? On Android, the JavaScript engine (Hermes) can't be relied on to know
+// the phone's time zone in toLocaleString. A Date's own getHours/getDate/... follow the phone's
+// clock, so we build the text from those. Times from the server are first moved onto the phone's
+// own clock (clock.ts), so they match its screen even when its time settings are wrong (a phone
+// set to California time with the clock typed in by hand showed a 2:29 pm follow as 1:59 am).
 
 const MONTHS = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
 const WEEKDAYS = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const toDate = (value: string | Date) => (typeof value === 'string' ? new Date(value) : value);
+const toDate = (value: string | Date) => (typeof value === 'string' ? toPhoneTime(value) : value);
 
 // "2:29 pm", "12:05 am"
 export function formatTime(value: string | Date): string {

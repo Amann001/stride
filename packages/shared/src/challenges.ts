@@ -219,6 +219,9 @@ export const manualActivitySchema = z.object({
   elapsedSeconds: z.number().int().min(1).max(7 * 86_400),
   distanceMeters: z.number().min(0).max(1_000_000),
   elevationGainMeters: z.number().min(0).max(20_000).default(0),
+  // The phone's clock (ms) when it sent this. If it's off from real time (wrong time settings),
+  // the server shifts the activity's times by the difference. Older app versions leave it out.
+  deviceNow: z.number().int().positive().optional(),
 });
 
 export const updateProfileSchema = z.object({

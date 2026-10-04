@@ -126,3 +126,41 @@ describe('who can see an activity', () => {
     expect(distanceBetween(mine.points.at(-1), theirs.points.at(-1))).toBeGreaterThanOrEqual(199);
   });
 });
+
+describe('phones with wrong time settings', () => {
+  // A phone set to California time with its clock typed in to show India's time is 12½ hours ahead.
+  const AHEAD = 12.5 * 3600_000;
+
+  it('moves a recorded run back onto real time', async () => {
+    const user = await createUser(app, 'WrongClock');
+    const realStart = new Date(Date.now() - 10 * 60_000);
+    const res = await call(app, user, 'POST', '/activities', {
+      type: 'run', title: 'Afternoon Run',
+      points: makeTrack({ km: 1, secondsPerKm: 300, start: new Date(realStart.getTime() + AHEAD) }),
+      deviceNow: Date.now() + AHEAD,
+    });
+    expect(res.status).toBe(201);
+    expect(Math.abs(Date.parse(res.body.startedAt) - realStart.getTime())).toBeLessThan(5_000);
+    // Distance and time don't change.
+    expect(res.body.elapsedSeconds).toBe(300);
+  });
+
+  it('moves a hand-typed activity back onto real time too', async () => {
+    const user = await createUser(app, 'WrongClock2');
+    const realStart = Date.now() - 3600_000;
+    const res = await call(app, user, 'POST', '/activities/manual', {
+      type: 'walk', title: 'Walk', startedAt: new Date(realStart + AHEAD).toISOString(),
+      elapsedSeconds: 1800, distanceMeters: 3000, deviceNow: Date.now() + AHEAD,
+    });
+    expect(Math.abs(Date.parse(res.body.startedAt) - realStart)).toBeLessThan(5_000);
+  });
+
+  it('leaves a phone with a right clock alone', async () => {
+    const user = await createUser(app, 'RightClock');
+    const start = new Date(Date.now() - 20 * 60_000);
+    const res = await call(app, user, 'POST', '/activities', {
+      type: 'run', title: 'Run', points: makeTrack({ km: 1, secondsPerKm: 300, start }), deviceNow: Date.now() + 30_000,
+    });
+    expect(res.body.startedAt).toBe(start.toISOString());
+  });
+});

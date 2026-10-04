@@ -129,8 +129,11 @@ installed apps through `npm run publish:app`.
   standard map in dark mode. Each map is a component with an `.android.tsx` twin (`route-map`,
   `maps-tab-map`, `create-route-map`); keep both in step.
 - Android has no `Alert.prompt`; use `promptText()` from `components/text-prompt.tsx`.
-- Don't format dates with `toLocaleString` in the app: on Android, Hermes doesn't know the phone's
-  time zone and shows wrong times. Use the helpers in `apps/mobile/src/lib/dates.ts`.
+- Don't format dates with `toLocaleString` in the app: on Android, Hermes can't be relied on for the
+  phone's time zone. Use the helpers in `apps/mobile/src/lib/dates.ts`.
+- Phones with wrong time settings (a wrong time zone, time typed in by hand) are handled: uploads
+  carry the phone's clock (`deviceNow`) and the server moves the activity onto real time
+  (`apps/api/src/clock-fix.ts`); the app shows server times on the phone's own clock (`lib/clock.ts`).
 - Google plans to require developer verification for apps installed outside the Play Store;
   it starts outside India first (expected in India in 2027).
 
@@ -140,7 +143,7 @@ installed apps through `npm run publish:app`.
 npm test
 ```
 
-Runs every automated test (142 of them, about 30 seconds):
+Runs every automated test (146 of them, about 30 seconds):
 
 | Where | What it checks |
 |---|---|

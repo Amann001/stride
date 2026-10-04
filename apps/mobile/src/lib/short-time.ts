@@ -1,8 +1,9 @@
+import { toPhoneTime } from './clock';
 import { formatDayMonth, weekdayShort } from './dates';
 
 // "now", "5m", "3h", "Tue", "12 Sep": short times for chats and comments.
 export function shortTime(iso: string): string {
-  const d = new Date(iso);
+  const d = toPhoneTime(iso);
   const mins = Math.round((Date.now() - d.getTime()) / 60_000);
   if (mins < 1) return 'now';
   if (mins < 60) return `${mins}m`;

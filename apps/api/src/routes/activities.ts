@@ -16,6 +16,7 @@ import { z } from 'zod';
 
 import { findActivity, findByClientId, selectActivities, toSummary, type ActivityRow } from '../activity-sql';
 import { analyseActivity, earlierActivities } from '../analysis';
+import { clockCorrection } from '../clock-fix';
 import { pool } from '../db';
 import { LIMITS } from '../rate-limits';
 
@@ -44,8 +45,10 @@ export async function activityRoutes(app: FastifyInstance) {
     // Already saved this exact recording (a retried upload)? Return it instead of a duplicate.
     const existingId = input.clientId ? await findByClientId(req.user.sub, input.clientId) : null;
     if (existingId) return reply.code(200).send(toSummary((await findActivity(existingId, req.user.sub))!, req.user.sub));
-    // Sort by time and drop GPS glitches (impossible jumps) before doing any maths.
-    const points = cleanTrack(input.points, input.type);
+    // Put right the times of a phone whose clock is wrong, then sort by time and drop GPS
+    // glitches (impossible jumps) before doing any maths.
+    const shift = clockCorrection(input.deviceNow);
+    const points = cleanTrack(shift ? input.points.map((p) => ({ ...p, t: p.t + shift })) : input.points, input.type);
     if (points.length < 2) {
       return reply.code(400).send({ error: 'Not enough good GPS points to save this activity' });
     }
@@ -96,7 +99,8 @@ export async function activityRoutes(app: FastifyInstance) {
   // streaks, challenges, and the longest/biggest-climb achievements.
   app.post('/activities/manual', { config: { rateLimit: LIMITS.activity } }, async (req, reply) => {
     const input = manualActivitySchema.parse(req.body);
-    const startedAt = new Date(input.startedAt);
+    // The start time was picked on the phone's clock: move it onto real time if that clock is off.
+    const startedAt = new Date(Date.parse(input.startedAt) + clockCorrection(input.deviceNow));
     const previous = await earlierActivities(pool, req.user.sub, input.type, startedAt);
     const achievements = computeAchievements(
       input.type,
