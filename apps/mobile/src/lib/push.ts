@@ -64,7 +64,12 @@ export async function unregisterPush(): Promise<void> {
 
 // Tapping a notification opens what it's about (the activity, the chat, the challenge...),
 // whether the app was open or closed. `ready` is false until someone is logged in.
-export function useOpenTappedNotifications(ready: boolean) {
+// The web preview has no notifications at all, so there this does nothing (the platform never
+// changes while the app runs, so picking the function once is safe for hooks).
+export const useOpenTappedNotifications: (ready: boolean) => void =
+  Platform.OS === 'web' ? () => {} : useOpenTappedNotificationsOnPhone;
+
+function useOpenTappedNotificationsOnPhone(ready: boolean) {
   const response = Notifications.useLastNotificationResponse();
   const handled = useRef<string | null>(null);
   useEffect(() => {

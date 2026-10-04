@@ -50,7 +50,7 @@ export default function DashboardPage() {
       </div>
 
       {activities.length === 0 ? (
-        <p className="text-zinc-500">No activities yet. Record one with the iPhone app and it will show up here.</p>
+        <p className="text-zinc-500">No activities yet. Record one with the Stride app and it will show up here.</p>
       ) : (
         <ul className="space-y-3">
           {activities.map((a) => (
