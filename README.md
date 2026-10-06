@@ -1,252 +1,310 @@
-# Stride
+<div align="center">
 
-A running and cycling tracker: record activities on your iPhone, see them on the web.
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="brand/stride-logo-on-dark.svg">
+  <img src="brand/stride-logo-on-light.svg" alt="Stride" height="72">
+</picture>
 
-```
-apps/mobile      iPhone app (React Native + Expo)
-apps/web         Website (Next.js)
-apps/api         Backend server (Node.js + Fastify + PostgreSQL)
-packages/shared  Code all three use: data shapes, validation, distance/pace maths
-```
+### A free, private fitness tracker for running, cycling, walking and hiking
 
-## First-time setup
+Record activities with GPS, follow friends, join challenges and clubs, and see your progress,
+on Android, iPhone and the web.
 
-1. **Install packages** (from this folder):
-   ```bash
-   npm install
-   ```
+**[Website](https://stride-amanswamy.vercel.app)** · **[Download for Android](https://stride-amanswamy.vercel.app/download)** · [Privacy policy](https://stride-api-sa5e.onrender.com/privacy)
 
-2. **Get a free database.** Sign up at https://neon.tech, create a project, and copy its connection string.
+![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
+![React Native](https://img.shields.io/badge/React_Native-Expo_57-000020?logo=expo&logoColor=white)
+![Node.js](https://img.shields.io/badge/Node.js-Fastify_5-000000?logo=fastify&logoColor=white)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
+![Tests](https://img.shields.io/badge/tests-146_passing-C8F31D)
+![Cost](https://img.shields.io/badge/running_cost-%E2%82%B90-C8F31D)
 
-3. **Configure the API.** Copy `apps/api/.env.example` to `apps/api/.env`, then paste in the
-   connection string and a random `JWT_SECRET`.
+</div>
 
-4. **Create the database tables:**
-   ```bash
-   npm run db:migrate
-   ```
+---
 
-## Running it (three terminals)
+<table>
+  <tr>
+    <td align="center"><img src="apps/web/public/showcase/progress.webp" width="170" alt="Progress screen"><br><sub>Progress and streaks</sub></td>
+    <td align="center"><img src="apps/web/public/showcase/challenges.webp" width="170" alt="Challenges screen"><br><sub>Challenges</sub></td>
+    <td align="center"><img src="apps/web/public/showcase/leaderboard.webp" width="170" alt="Challenge leaderboard"><br><sub>Leaderboards</sub></td>
+    <td align="center"><img src="apps/web/public/showcase/notifications.webp" width="170" alt="Notifications"><br><sub>Notifications</sub></td>
+    <td align="center"><img src="apps/web/public/showcase/club.webp" width="170" alt="Club page"><br><sub>Clubs</sub></td>
+  </tr>
+</table>
 
-```bash
-npm run dev:api      # API on http://localhost:4000
-npm run dev:web      # Website on http://localhost:3000
-npm run dev:mobile   # Shows a QR code for the iPhone app
-```
+<sub>Real screens from the Android app, shown with sample people and activities.</sub>
 
-**On your iPhone:** install **Expo Go** from the App Store, make sure the phone is on the same
-Wi-Fi as your computer, then scan the QR code with the Camera app.
+## About
 
-If the app says it can't reach the server, check the "Server" address at the bottom of the
-**You** tab, and allow Node.js through Windows Firewall on private networks.
+Stride is a full-stack fitness app in the style of Strava, built from scratch as a 3rd-year
+project and used by real people. One codebase gives an **Android app**, an **iPhone app**, a
+**website** and a **backend server**. All of them share the same rules for data and GPS maths.
 
-## Good to know
+Three ideas shaped it:
 
-- In Expo Go, GPS only records while the app is open, so the Record screen keeps your screen on.
-  Background tracking needs a "development build" (`eas build --profile development`), which
-  we'll set up in a later phase.
-- The server works out distance, time and elevation itself from the GPS points, so the numbers
-  are the same everywhere.
-- After pulling new code, run `npm run db:migrate` again. It adds any new tables or columns and
-  fills in data for activities you recorded before (e.g. personal records).
+- **Free, always.** No ads and no subscription. Creating your own group challenges, planning
+  routes, heatmaps and satellite maps are all included. It runs entirely on free services.
+- **Private by default.** New activities are visible to followers only, the start and end of
+  every route are hidden from others, and there are no trackers. Your data is never sold.
+- **Numbers you can trust.** The phone sends raw GPS points, and the server works out the
+  distance, pace, splits and records itself, so every screen shows the same, honest numbers.
 
-## Activity types
+## Features
 
-Each type has its own features. What each one measures lives in `packages/shared/src/categories.ts`.
-
-| | Live on the Record screen | Voice update | On the activity screen |
-|---|---|---|---|
-| **Run** | Time, distance, avg pace, current split pace | every 1 km | Splits, best efforts (400m to marathon), cadence |
-| **Ride** | Live speed, max speed, avg speed | every 5 km | 5 km splits, best efforts (5K to 100K), max speed |
-| **Walk** | Time, distance, steps | every 1 km | Steps, splits, best efforts (1K to 10K) |
-| **Hike** | Time, distance, climb, altitude | every 1 km | Elevation profile first, highest point |
-
-Every saved activity is compared with your earlier ones of the same type to award achievements:
-first activity, PRs (plus 2nd and 3rd fastest), longest, biggest climb and most steps.
-
-## The app's tabs
-
-- **Home:** swipeable streak and this-week cards, your activity feed (with share), and suggested
-  challenges. **+** adds an activity by hand (treadmill, bike computer); the bell lists your achievements.
-- **Maps:** every route you've recorded on one map, colored by sport. Tap a route to open it.
-- **Record:** full-screen map, GPS status, a stats panel that expands to big numbers and splits,
-  a sport picker and voice updates.
-- **Groups:** monthly challenges (e.g. "October 50K Run", "400-Minute Challenge"). Join one and your
-  activities count automatically; finished ones go in your trophy case. **Create a Challenge** sets
-  your own goal and dates (up to 3 months) and invites people you follow: they get a notification,
-  and the challenge has its own leaderboard. "Only you" activities don't count towards it.
-- **You:** Progress (this week, past 12 weeks chart, streak calendar, weekly goal, best efforts),
-  Activities, and More (statistics, trophy case, settings).
-
-## Friends
-
-- **Find people:** search by name, "Who to Follow" suggestions (people who follow you, friends
-  of friends, active athletes), your QR code and a scanner, and invites by text or share sheet.
-- **Follow** people to see their activities in your Home feed. Give **kudos**, **comment**, and
-  open their profile (followers, following, activities).
-- **Messages:** private one-to-one chats with anyone you follow or who follows you.
-- **Notifications:** new followers, kudos, comments and challenge invites, plus your achievements.
-  On the Android app they also arrive as **push notifications** (with new messages too), even when
-  the app is closed; tapping one opens what it's about. Expo Go (iPhone) can't receive push, so
-  there they stay in the in-app list.
-- **Clubs** (Groups tab): create or join a club for a sport, with a weekly distance leaderboard.
-- **Who can view** each activity: Everyone, Followers, or Only You. Private activities never
-  appear in feeds, clubs or shared heatmaps.
-
-To try Friends you need a second account: register one on the website or another phone.
-
-## Live in the cloud (no laptop needed)
-
-| Part | Where it runs |
+| | |
 |---|---|
-| Database | Neon (Singapore) |
-| Backend API | Render, `https://stride-api-sa5e.onrender.com` (free plan, Singapore). Redeploys on every push to `main` and runs new migrations automatically. Config: [`render.yaml`](render.yaml) |
-| iPhone app | Expo's cloud (EAS Update, channel `production`), opened in Expo Go |
-| Website | Vercel, https://stride-amanswamy.vercel.app (free Hobby plan; project `stride-app`, folder `apps/web`, server code in Singapore). `NEXT_PUBLIC_API_URL` is set to the backend above in the Vercel project's settings |
+| **GPS recording** | Runs, rides, walks and hikes, each with its own live stats and voice updates. GPS glitch filtering, moving time that ignores stops, and an offline outbox so a run recorded without signal is never lost. |
+| **Activity analysis** | Splits, elevation profile, best efforts (400 m to marathon for runs, 5K to 100K for rides), personal records with 2nd and 3rd place, and achievements. |
+| **Progress** | Weekly totals, a 12-week chart, weekly goal, streak calendar and a trophy case. |
+| **Friends** | Follow people, a home feed, kudos, comments, private messages, "Who to Follow", and adding friends by QR code. |
+| **Challenges** | New challenges every month, plus **your own challenges** with any goal and dates, invites and a live leaderboard. |
+| **Clubs** | Groups for a sport and a place, with a weekly distance leaderboard. |
+| **Maps** | All your routes on one map, suggested routes, routes you draw yourself, personal and shared heatmaps, and Standard, Dark and Satellite maps. |
+| **Notifications** | Follows, kudos, comments, challenge invites and messages, in the app and as push notifications on Android. Tapping one opens what it's about. |
+| **Safety** | Who-can-see per activity (Everyone, Followers, Only you), a 200 m privacy zone, blocking and reporting, and account deletion that erases everything. |
+| **Website** | Log in to see your activities, routes and stats on a bigger screen, and download the Android app. |
 
-**Open the app anywhere** (Wi-Fi or mobile data, laptop off): in Expo Go, signed in as the
-project owner, open
-`exp://u.expo.dev/4e419f43-5433-41ca-be3d-8ac8867a9622?runtime-version=exposdk%3A57.0.0&channel-name=production`.
-Expo Go then keeps Stride in its recently opened list.
+## How it's built
 
-**Publish app changes** (after committing them), to iPhone (Expo Go) and Android:
-```bash
-npm run publish:app
+```mermaid
+flowchart LR
+  subgraph Clients
+    A["Android app<br/>React Native + Expo"]
+    I["iPhone app<br/>React Native + Expo"]
+    W["Website<br/>Next.js on Vercel"]
+  end
+  S["@repo/shared<br/>zod schemas · GPS maths · formatting"]
+  API["API server<br/>Node.js + Fastify on Render"]
+  DB[("PostgreSQL<br/>Neon")]
+  PUSH["Expo push + Firebase"]
+  MAPS["OpenFreeMap · EOX satellite<br/>OSRM routing"]
+
+  A -- "HTTPS + JWT" --> API
+  I -- "HTTPS + JWT" --> API
+  W -- "HTTPS + JWT" --> API
+  S -.-> A
+  S -.-> I
+  S -.-> W
+  S -.-> API
+  API --> DB
+  API --> PUSH
+  PUSH --> A
+  A -.-> MAPS
+  API --> MAPS
 ```
 
-**Android app** (a real app with the Stride icon, installed from a link, not the Play Store):
-```bash
-npm run build:android
-```
-Builds an APK on Expo's free build service (profile `android-apk` in `apps/mobile/eas.json`).
-The finished build has a download link and QR code on expo.dev. Only rebuild when native
-code changes (new native packages, app.json permissions or icons); everything else reaches
-installed apps through `npm run publish:app`.
+| Layer | Technology |
+|---|---|
+| Mobile | React Native 0.86, Expo SDK 57, Expo Router, MapLibre (Android), Apple Maps (iPhone), expo-location, expo-notifications |
+| Website | Next.js 16, React 19, Tailwind CSS 4 |
+| Backend | Node.js, Fastify 5, PostgreSQL (`pg`), zod 4, JWT auth, scrypt password hashing |
+| Shared | One TypeScript package of zod schemas, GPS maths and formatting, used by all three apps |
+| Testing | Vitest, PGlite (Postgres running in memory) for end-to-end API tests |
+| Hosting and ops | Render (API), Neon (database), Vercel (website), Expo EAS (builds and over-the-air updates), GitHub Actions (CI, backups, uptime) |
 
-- Maps on Android use MapLibre with free OpenFreeMap tiles (no account or key): Standard, Dark
-  and Muted, plus Satellite from EOxCloudless 2016 (Sentinel-2 photos, CC BY 4.0, free even
-  commercially; later years are non-commercial only). iPhone uses Apple Maps; its Dark type is the
-  standard map in dark mode. Each map is a component with an `.android.tsx` twin (`route-map`,
-  `maps-tab-map`, `create-route-map`); keep both in step.
-- Android has no `Alert.prompt`; use `promptText()` from `components/text-prompt.tsx`.
-- Don't format dates with `toLocaleString` in the app: on Android, Hermes can't be relied on for the
-  phone's time zone. Use the helpers in `apps/mobile/src/lib/dates.ts`.
-- Phones with wrong time settings (a wrong time zone, time typed in by hand) are handled: uploads
-  carry the phone's clock (`deviceNow`) and the server moves the activity onto real time
-  (`apps/api/src/clock-fix.ts`); the app shows server times on the phone's own clock (`lib/clock.ts`).
-- Google plans to require developer verification for apps installed outside the Play Store;
-  it starts outside India first (expected in India in 2027).
+**In numbers:** 146 automated tests · about 75 API endpoints · 22 database tables · 11 migrations ·
+₹0 a month to run.
+
+## Engineering highlights
+
+- **The server is the source of truth for stats.** The app uploads raw GPS points. The server
+  drops impossible jumps (speed limits per sport), separates moving time from stops, and works
+  out splits, climbing, best efforts and records
+  ([`geo.ts`](packages/shared/src/geo.ts), [`analysis.ts`](packages/shared/src/analysis.ts)).
+- **One set of rules everywhere.** The same zod schemas check input on the phone, the website
+  and the server, so the three can't disagree about what's valid
+  ([`packages/shared`](packages/shared/src)).
+- **Offline-first recording.** Finished activities wait in an on-phone outbox until they upload.
+  Each one carries a client ID and the database has a unique index on it, so a retried upload
+  never creates a duplicate ([`pending-activities.ts`](apps/mobile/src/lib/pending-activities.ts)).
+- **Privacy enforced on the server.** Visibility and two-way blocks are part of every query that
+  returns someone else's data ([`activity-sql.ts`](apps/api/src/activity-sql.ts)). The first and
+  last 200 m of a route are cut off before it leaves the server
+  ([`hideEnds`](packages/shared/src/geo.ts)).
+- **Heatmaps drawn by the server.** Map tiles are drawn from everyone's routes as PNG images
+  (with a small built-in PNG encoder), with no paid map service
+  ([`heatmap.ts`](apps/api/src/heatmap.ts)).
+- **Handles phones with the wrong clock.** Uploads carry the phone's time, and the server shifts
+  activities onto real time when the phone's clock is wrong
+  ([`clock-fix.ts`](apps/api/src/clock-fix.ts)).
+- **Push notifications that respect privacy.** They are never sent between blocked people, they
+  stop after logout, and dead phones are removed automatically ([`push.ts`](apps/api/src/push.ts)).
+- **Security basics done properly.** Salted scrypt password hashes, JWTs that are revoked on
+  password change, rate limits per visitor and per account, every request validated, and
+  password reset by emailed code.
+- **Run like a real service.** CI on every push, encrypted weekly database backups, an hourly
+  uptime check, crash and error reports, and Dependabot security updates.
 
 ## Tests
 
 ```bash
-npm test
+npm test     # all 146 tests, about 30 seconds
 ```
 
-Runs every automated test (146 of them, about 30 seconds):
-
-| Where | What it checks |
+| Suite | What it covers |
 |---|---|
-| `apps/api/test` | The server, end to end: sign-up, login, password reset and email change (with a pretend mailbox), recording activities (distance, PRs, GPS glitches, duplicate uploads), who can see what (Everyone / Followers / Only you, the 200 m privacy zone), follows, feed, kudos, comments, notifications, blocking, reports, messages, clubs, monthly and created challenges, stats, goals, saved routes, heatmap keys, push notifications (what's sent, to which phones, not after logout or a block, dead phones removed) |
-| `packages/shared/test` | The maths and rules both apps share: GPS distance, glitch removal, climbing, polylines, privacy zone, splits, best efforts, achievements, formatting, form checks |
-| `apps/mobile/test` | The phone's offline outbox (a run recorded without signal is never lost or uploaded twice), push sign-up and logout, dates in the phone's own time zone, the map types (free sources only), and the stats shown on cards |
+| [`apps/api/test`](apps/api/test) | The server end to end, against a real Postgres: sign-up, login, password reset, recording activities (distance, records, GPS glitches, duplicate uploads), who can see what, the privacy zone, follows, feed, kudos, comments, blocking, reports, messages, clubs, challenges, stats, routes, heatmaps and push notifications |
+| [`packages/shared/test`](packages/shared/test) | GPS distance, glitch removal, climbing, splits, best efforts, achievements, the privacy zone, formatting and form checks |
+| [`apps/mobile/test`](apps/mobile/test) | The offline outbox, push sign-up and logout, dates in the phone's own time zone, map types and stats on cards |
 
-The server tests start their own throwaway Postgres in memory (PGlite) and run the real
-migrations on it. They never read `.env` and refuse to run against anything but this computer,
-so they can't touch the live database. GitHub runs the type checks, all tests and the app's lint on
-every push (`.github/workflows/ci.yml`); a red cross on the commit means something broke.
+The API tests start a throwaway Postgres in memory (PGlite) and run the real migrations on it.
+They refuse to run against anything except this computer, so they can never touch the live
+database. GitHub Actions runs type checks, all tests and lint on every push
+([`ci.yml`](.github/workflows/ci.yml)).
 
-## Running Stride (owner checklist)
+## Project structure
 
-- **Weekly:** `npm run ops` shows open reports and the last week's crashes/errors.
-  Mark a report done with `npm run ops -- reviewed <id>` (or `actioned`).
-- **Backups:** every Sunday, GitHub Actions saves an encrypted copy of the database
-  (`.github/workflows/backup.yml`), kept for 90 days. Make one now: GitHub → Actions →
-  Database backup → Run workflow.
-- **Uptime:** every hour GitHub checks the server (`uptime.yml`) and emails you if it's down.
-- **Security updates:** Dependabot alerts and security fixes are on for this repo; weekly
-  update pull requests come from `.github/dependabot.yml` (Expo/React Native packages are
-  upgraded together with `npx expo install --fix` instead).
+```
+apps/
+  mobile/     Android and iPhone app (React Native + Expo Router)
+  web/        Website (Next.js)
+  api/        Backend server (Fastify + PostgreSQL), with SQL migrations
+packages/
+  shared/     Schemas, GPS maths and formatting used by all three apps
+brand/        Logo and icon files
+.github/      CI, weekly backups and uptime checks
+```
+
+## Running it locally
+
+You need Node.js 22+ and a free [Neon](https://neon.tech) Postgres database.
+
+```bash
+npm install
+cp apps/api/.env.example apps/api/.env   # add DATABASE_URL and a random JWT_SECRET
+npm run db:migrate                       # create the tables
+
+npm run dev:api       # API      → http://localhost:4000
+npm run dev:web       # website  → http://localhost:3000
+npm run dev:mobile    # app      → scan the QR code with Expo Go
+```
+
+The phone and computer need to be on the same Wi-Fi. If the app can't reach the server, check
+the "Server" address at the bottom of the **You** tab, and allow Node.js through the firewall on
+private networks. To check layouts without a phone, run `npx expo start --web` in `apps/mobile`
+(maps only draw on a real phone).
+
+## Roadmap
+
+- [x] Accounts, GPS recording, activity analysis, personal records and achievements
+- [x] Maps: route suggestions, drawing routes, heatmaps, Standard, Dark and Satellite maps
+- [x] Friends: follows, feed, kudos, comments, messages, notifications, clubs
+- [x] Monthly challenges and your own challenges with invites and leaderboards
+- [x] Push notifications, progress charts, goals and streaks
+- [x] Automated tests, CI, backups, uptime monitoring, website and Android download page
+- [ ] Google Play and App Store listings
+- [ ] Background GPS recording (screen off)
+- [ ] Photos on activities
+- [ ] Segments with leaderboards
+
+## Author
+
+Built by **Aman Swamy** ([@Amann001](https://github.com/Amann001)).
+
+---
+
+<details>
+<summary><b>Owner notes: deploying, operations and gotchas</b></summary>
+
+### Where it runs
+
+| Part | Where |
+|---|---|
+| Database | Neon (Singapore) |
+| API | Render, `https://stride-api-sa5e.onrender.com` (free plan, Singapore). Redeploys on every push to `main` and runs new migrations on start. Config: [`render.yaml`](render.yaml) |
+| Website | Vercel, https://stride-amanswamy.vercel.app (project `stride-app`, folder `apps/web`). `NEXT_PUBLIC_API_URL` is set in the Vercel project settings |
+| Android app | APK built on Expo EAS. The current download link and version live in [`apps/web/src/lib/android-app.ts`](apps/web/src/lib/android-app.ts) |
+| iPhone app | Expo Go, loading the `production` update channel |
+
+Render's free plan sleeps after 15 minutes without use, so the first request after a break can
+take up to a minute.
+
+### Releasing
+
+- **App changes** (most changes): commit, then `npm run publish:app`. This sends an over-the-air
+  update to iPhone (Expo Go) and Android.
+- **Native changes** (new native packages, permissions, icons): bump `version` in
+  `apps/mobile/app.json` (the runtime version follows the app version), then
+  `npm run build:android`. Paste the new APK link and version into `android-app.ts`, writing the
+  size as plain digits, and publish an update.
+- The published app gets its API address from `EXPO_PUBLIC_API_URL` in the EAS `production`
+  environment (not from `.env.production`, which only local `expo export` uses).
+- `ios.runtimeVersion` is `exposdk:57.0.0` so Expo Go can load the update. When Expo Go moves to
+  a new SDK, run `npx expo install expo@latest --fix` and update it. For an App Store build,
+  switch it to `{ "policy": "appVersion" }`.
+- To open the iPhone app on any network, open this link in Expo Go while signed in as the
+  project owner:
+  `exp://u.expo.dev/4e419f43-5433-41ca-be3d-8ac8867a9622?runtime-version=exposdk%3A57.0.0&channel-name=production`
+
+### Weekly checks
+
+- `npm run ops` shows open reports and the last week's crashes and errors. Mark a report done
+  with `npm run ops -- reviewed <id>` (or `actioned`).
+- **Backups:** every Sunday GitHub Actions saves an encrypted copy of the database
+  ([`backup.yml`](.github/workflows/backup.yml)), kept for 90 days. To make one now: GitHub →
+  Actions → Database backup → Run workflow.
+- **Uptime:** every hour GitHub checks the server ([`uptime.yml`](.github/workflows/uptime.yml))
+  and emails you if it's down.
+- **Security updates:** Dependabot alerts and weekly update pull requests
+  ([`dependabot.yml`](.github/dependabot.yml)). Upgrade Expo and React Native packages together
+  with `npx expo install --fix`.
 
 ### Restoring a backup
+
 You need `BACKUP_PASSPHRASE` from `apps/api/.env`, GnuPG and Postgres 18's `pg_restore`.
+
 ```bash
 gh run download --repo Amann001/stride --name stride-database-<number>
 gpg --decrypt --output stride.dump stride.dump.gpg
 pg_restore --clean --if-exists --no-owner --dbname "<DATABASE_URL>" stride.dump
 ```
-Restoring replaces the current data with the backup's, so try it on a new Neon branch first.
+
+Restoring replaces the current data, so try it on a new Neon branch first.
 
 ### Push notifications
-The server sends pushes through Expo's free push service (`apps/api/src/push.ts`); phones sign
-up at `PUT /me/push-token` after login and sign out at logout. Android needs Firebase (free):
-`apps/mobile/google-services.json` in the app, and the Firebase service account key uploaded to
-expo.dev → Credentials → Android → FCM V1 (never commit that key). Push is native code, so it
-reaches people with a new APK (`npm run build:android`); the app's version went to 1.1.0 so
-over-the-air updates for it only go to the new APK, never to older installs without it.
 
-### Password reset emails
-"Forgot password" sends a 6-digit code by email. Until email is set up it says it isn't
-available yet.
+The server sends pushes through Expo's free push service ([`push.ts`](apps/api/src/push.ts)).
+Phones register at `PUT /me/push-token` after login and unregister at logout. Android needs
+Firebase: `apps/mobile/google-services.json` is in the app, and the Firebase service account key
+is uploaded to expo.dev → Credentials → Android → FCM V1. **Never commit that key.** Expo Go
+on iPhone can't receive push, so there notifications stay in the in-app list.
 
-Render's free plan blocks the normal email (SMTP) ports, so emails go through **Brevo's web
-API** (free, 300 a day). On Render (Environment) set `BREVO_API_KEY` and
-`MAIL_FROM` = `Stride <stride.supportteam@gmail.com>` (the sender must be verified in Brevo).
-On paid hosting, SMTP works instead: `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`.
-If an email fails to send, the reason shows up in `npm run ops`.
+### Email (password reset)
 
-## Safety and privacy
+Render's free plan blocks SMTP ports, so email goes through **Brevo's web API** (free, 300 a
+day). On Render set `BREVO_API_KEY` and `MAIL_FROM` = `Stride <stride.supportteam@gmail.com>`
+(the sender must be verified in Brevo). On other hosting, SMTP works instead: `SMTP_HOST`,
+`SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`. Failed sends show up in `npm run ops`.
 
-- **Privacy zone:** other people never see the first and last 200 m of a route (maps, feed,
-  clubs, activity detail, shared heatmap). See `hideEnds` in `packages/shared/src/geo.ts`.
-- **Block and report:** ⋯ on a profile or chat. Blocks apply in both directions everywhere
-  (see `noBlockBetween` in `apps/api/src/activity-sql.ts`). Reports go to the `reports`
-  table; review them in the Neon console (`SELECT * FROM reports WHERE status = 'open'`).
-- **Delete account:** You → Settings → Delete Account (asks for the password). Erases the
-  account and everything linked to it.
-- **Rate limits** on login, sign-up, password reset and account deletion (per visitor), and on
-  comments, messages, follows, kudos, reports, clubs and uploads (per account): see
-  `apps/api/src/rate-limits.ts`.
-- **Change password** logs out every other phone (token version, migration 008).
-- **New activities default to Followers.** People can choose Everyone per activity.
-- **Crash reports:** the app reports crashes and shows a "Try again" screen instead of
-  closing; server errors are saved too (`error_reports` table, no personal data).
-- **Logs** never contain the heatmap access key.
-- **Privacy policy and terms:** served by the API at `/privacy` and `/terms`. To show a
-  contact address in them, set `CONTACT_EMAIL` on Render (use a dedicated address, not a
-  personal one). Update these pages whenever the app starts collecting something new.
-The published app gets the API address from the `EXPO_PUBLIC_API_URL` variable in the EAS
-`production` environment (not from `.env.production`, which only local `expo export` uses).
+### Privacy and safety details
 
-Good to know:
-- Render's free plan sleeps after 15 minutes without use, so the first request after a break
-  can take up to a minute.
-- `ios.runtimeVersion` is `exposdk:57.0.0` so Expo Go can load the update. When Expo Go moves to a
-  new SDK, upgrade the project (`npx expo install expo@latest --fix`) and update this value.
-  For a TestFlight/App Store build, switch it to `{ "policy": "appVersion" }`.
+- The privacy zone (`hideEnds` in [`geo.ts`](packages/shared/src/geo.ts)) applies to maps, feed,
+  clubs, activity pages and shared heatmaps.
+- Blocks apply both ways everywhere (`noBlockBetween` in
+  [`activity-sql.ts`](apps/api/src/activity-sql.ts)).
+- Rate limits: [`rate-limits.ts`](apps/api/src/rate-limits.ts). Changing a password logs out
+  every other device (token version).
+- Crash reports and server errors go to the `error_reports` table with no personal data. Logs
+  never contain the heatmap access key.
+- The privacy policy and terms are served by the API at `/privacy` and `/terms`
+  ([`legal.ts`](apps/api/src/routes/legal.ts)). Set `CONTACT_EMAIL` on Render to show a
+  contact address. Update them whenever the app starts collecting something new.
 
-## Running on your phone quickly
+### Code gotchas
 
-`npm run dev:mobile` runs in development mode (live reload, slower). For a quick, smooth
-preview, run the app in production mode instead:
+- What each activity type measures (live stats, voice update distance, best efforts) lives in
+  [`categories.ts`](packages/shared/src/categories.ts).
+- Each map component has an `.android.tsx` twin (MapLibre) next to the iPhone version (Apple
+  Maps): `route-map`, `maps-tab-map`, `create-route-map`. Keep both in step.
+- Android maps use free OpenFreeMap styles. Satellite uses EOxCloudless **2016** (CC BY 4.0;
+  later years are non-commercial only), and its credit must stay visible.
+- Don't format dates with `toLocaleString` in the app: Hermes on Android can't be trusted with
+  time zones. Use [`lib/dates.ts`](apps/mobile/src/lib/dates.ts).
+- Android has no `Alert.prompt`; use `promptText()` from `components/text-prompt.tsx`.
+- After pulling new code, run `npm run db:migrate`. It adds new tables and columns, and fills in
+  data for older activities.
+- GPS records while the app is open (no background tracking yet), so the Record screen keeps
+  the screen on.
 
-```bash
-cd apps/mobile && npx expo start --no-dev --minify
-```
-
-In Expo Go, the first screen (app icon and name) is Expo Go's own loading screen and can't be
-changed. A real build (`eas build`) shows Stride's STRIDE splash from the very first frame.
-
-To check layouts in a desktop browser, run `npx expo start --web` in `apps/mobile`. Maps show a
-grey placeholder there (Apple Maps only exists on the phone); everything else works.
-
-## Roadmap
-
-- [x] **Phase 1:** accounts, GPS recording, activity list and maps (mobile + web)
-- [x] **Phase 1.5:** per-type features, achievements, weekly streak, personal records
-- [x] **Phase 1.6:** Strava-style tabs (Home, Maps, Record, Groups, You), challenges, goals, manual activities
-- [x] **Phase 1.7:** Maps (route suggestions, heatmaps, map types, create and saved routes)
-- [x] **Phase 2:** follow people, search, kudos, comments, messages, notifications, clubs
-- [ ] **Phase 3:** push notifications, photos, segments and leaderboards, club events
-- [ ] **Phase 3:** charts over time, goals
-- [ ] **Phase 4:** segments and leaderboards (PostGIS), challenges, clubs
+</details>
