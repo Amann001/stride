@@ -163,7 +163,7 @@ apps/
 packages/
   shared/     Schemas, GPS maths and formatting used by all three apps
 brand/        Logo and icon files
-.github/      CI, weekly backups and uptime checks
+.github/      CI and uptime checks (backups run in a separate private repo)
 ```
 
 ## Running it locally
@@ -241,9 +241,10 @@ take up to a minute.
 
 - `npm run ops` shows open reports and the last week's crashes and errors. Mark a report done
   with `npm run ops -- reviewed <id>` (or `actioned`).
-- **Backups:** every Sunday GitHub Actions saves an encrypted copy of the database
-  ([`backup.yml`](.github/workflows/backup.yml)), kept for 90 days. To make one now: GitHub →
-  Actions → Database backup → Run workflow.
+- **Backups:** every Sunday the private repo `Amann001/stride-backups` saves an encrypted copy of
+  the database, kept for 90 days. They live there, not here, so no user data (not even
+  encrypted) is ever downloadable from this public repo. To make one now: that repo → Actions →
+  Database backup → Run workflow.
 - **Uptime:** every hour GitHub checks the server ([`uptime.yml`](.github/workflows/uptime.yml))
   and emails you if it's down.
 - **Security updates:** Dependabot alerts and weekly update pull requests
@@ -255,7 +256,7 @@ take up to a minute.
 You need `BACKUP_PASSPHRASE` from `apps/api/.env`, GnuPG and Postgres 18's `pg_restore`.
 
 ```bash
-gh run download --repo Amann001/stride --name stride-database-<number>
+gh run download --repo Amann001/stride-backups --name stride-database-<number>
 gpg --decrypt --output stride.dump stride.dump.gpg
 pg_restore --clean --if-exists --no-owner --dbname "<DATABASE_URL>" stride.dump
 ```
