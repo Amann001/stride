@@ -1,35 +1,36 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Archivo } from "next/font/google";
 import "./globals.css";
 
 import { Navbar } from "@/components/navbar";
 import { AuthProvider } from "@/lib/auth";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Archivo: a sporty grotesque with a width axis, so headlines can run wide like a race bib
+// while body text stays at normal width. One family, two jobs.
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  axes: ["wdth"],
+  style: ["normal", "italic"],
 });
 
 export const metadata: Metadata = {
-  title: "Stride",
-  description: "Track your runs and rides, and see them on a map.",
+  title: "Stride: free, private tracking for runs, rides, walks and hikes",
+  description:
+    "Record runs, rides, walks and hikes with GPS, follow friends, join challenges and clubs. Free, private, on Android, iPhone and the web.",
+};
+
+export const viewport: Viewport = {
+  themeColor: "#121212",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
-    >
+    <html lang="en" className={`${archivo.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
         <AuthProvider>
           <Navbar />
-          <main className="mx-auto w-full max-w-4xl flex-1 px-4 py-8">{children}</main>
+          {children}
         </AuthProvider>
       </body>
     </html>
