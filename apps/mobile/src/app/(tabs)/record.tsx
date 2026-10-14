@@ -20,11 +20,11 @@ import {
 } from '@repo/shared';
 import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useIsFocused } from 'expo-router';
-import * as Speech from 'expo-speech';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { MusicSheet } from '@/components/music-sheet';
 import { RouteMap } from '@/components/route-map';
 import { SportSheet } from '@/components/sport-sheet';
 import type { IconName } from '@/constants/categories';
@@ -36,6 +36,7 @@ import { addPending, isRetryable, newClientId, type PendingActivity } from '@/li
 import { useGpsSignal } from '@/lib/use-gps-signal';
 import { setActiveRoute, useActiveRoute } from '@/lib/route-store';
 import { useRecorder } from '@/lib/use-recorder';
+import { speak } from '@/lib/voice';
 
 type Item = { label: string; value: string };
 
@@ -56,7 +57,7 @@ function splitAnnouncement(type: ActivityType, meters: number, elapsed: number, 
 
 // Record tab: a full-screen map with your stats underneath. Pick a sport, wait for
 // "GPS Acquired", press Start. Tap the arrows to switch to big numbers and splits.
-// A voice reads out your progress at every split.
+// A voice reads out your progress at every split, turning your music down while it speaks.
 export default function RecordScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
@@ -67,6 +68,7 @@ export default function RecordScreen() {
   const [voiceOn, setVoiceOn] = useState(true);
   const [expanded, setExpanded] = useState(false);
   const [sportSheetOpen, setSportSheetOpen] = useState(false);
+  const [musicOpen, setMusicOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const gps = useGpsSignal(focused && rec.status === 'idle');
   const config = CATEGORIES[type];
@@ -83,7 +85,7 @@ export default function RecordScreen() {
   }
 
   const say = (text: string) => {
-    if (voiceOn) Speech.speak(text);
+    if (voiceOn) speak(text);
   };
 
   // Keep the screen on while recording. In Expo Go, GPS stops if the app goes to the background.
@@ -122,7 +124,7 @@ export default function RecordScreen() {
     if (n <= announced.current) return;
     announced.current = n;
     if (voiceOn) {
-      Speech.speak(splitAnnouncement(type, n * config.splitMeters, rec.elapsed, lastSplitSeconds, { steps: rec.steps, climb }));
+      speak(splitAnnouncement(type, n * config.splitMeters, rec.elapsed, lastSplitSeconds, { steps: rec.steps, climb }));
     }
   }, [doneSplits.length, lastSplitSeconds, rec.elapsed, rec.status, rec.steps, config.splitMeters, type, voiceOn, climb]);
 
@@ -289,6 +291,10 @@ export default function RecordScreen() {
             style={[styles.floating, styles.voice, { top: insets.top + 8, backgroundColor: colors.card }]}>
             <MaterialCommunityIcons name={voiceOn ? 'volume-high' : 'volume-off'} size={24} color={voiceOn ? colors.accent : colors.text} />
           </Pressable>
+          <Pressable onPress={() => setMusicOpen(true)} accessibilityLabel="Play music"
+            style={[styles.floating, styles.music, { top: insets.top + 64, backgroundColor: colors.card }]}>
+            <MaterialCommunityIcons name="music-note" size={24} color={colors.text} />
+          </Pressable>
           {activeRoute && (
             <View style={[styles.routeChip, { top: insets.top + 12, backgroundColor: colors.card }]}>
               <MaterialCommunityIcons name="map-marker-path" size={18} color="#38BDF8" />
@@ -330,6 +336,7 @@ export default function RecordScreen() {
       )}
       <View style={{ backgroundColor: colors.card }}>{controls}</View>
 
+      <MusicSheet visible={musicOpen} recording={rec.status !== 'idle'} onClose={() => setMusicOpen(false)} />
       <SportSheet visible={sportSheetOpen} selected={type} onSelect={setType} onClose={() => setSportSheetOpen(false)} />
     </View>
   );
@@ -364,7 +371,7 @@ function SideButton({ icon, label, onPress, tint }: { icon: IconName; label: str
 const styles = StyleSheet.create({
   screen: { flex: 1 },
   map: { flex: 1, height: undefined },
-  // Round buttons floating over the map: close on the left, voice on the right.
+  // Round buttons floating over the map: close on the left, voice and music on the right.
   floating: {
     position: 'absolute', width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center',
     shadowColor: '#000', shadowOpacity: 0.25, shadowRadius: 4, shadowOffset: { width: 0, height: 2 },
@@ -397,6 +404,7 @@ const styles = StyleSheet.create({
   splitBar: { flex: 1, height: 26, borderRadius: 6, alignItems: 'center', justifyContent: 'center' },
   splitText: { color: INK, fontWeight: '700', fontSize: 12 },
   voice: { right: 12 },
+  music: { right: 12 },
   routeChip: {
     position: 'absolute', left: 68, right: 68, flexDirection: 'row', alignItems: 'center', gap: 6, justifyContent: 'center',
     borderRadius: 999, paddingHorizontal: 12, paddingVertical: 8,
