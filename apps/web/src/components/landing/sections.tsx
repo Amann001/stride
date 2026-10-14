@@ -3,8 +3,18 @@
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 
-import { PACE_SECONDS, PLATE, ROUTE_BOX, ROUTE_KM, ROUTE_PATH, ROUTE_POINTS, formatClock, pointAt } from "@/lib/landing-route";
+import {
+  PACE_SECONDS,
+  PLATE,
+  ROUTE_BOX,
+  ROUTE_KM,
+  ROUTE_PATH,
+  ROUTE_POINTS,
+  formatClock,
+  pointAt,
+} from "@/lib/landing-route";
 
+import { RunCard } from "./run-card";
 import s from "./landing.module.css";
 
 export const GITHUB_URL = "https://github.com/Amann001/stride";
@@ -51,7 +61,12 @@ function Toggle<T extends string>({
   return (
     <div className={s.toggle} role="group" aria-label={label}>
       {options.map((o) => (
-        <button key={o.value} type="button" aria-pressed={value === o.value} onClick={() => onChange(o.value)}>
+        <button
+          key={o.value}
+          type="button"
+          aria-pressed={value === o.value}
+          onClick={() => onChange(o.value)}
+        >
           {o.label}
         </button>
       ))}
@@ -72,71 +87,14 @@ const box = (aspect: number) => {
   const cy = ROUTE_BOX.y + ROUTE_BOX.height / 2;
   return `${(cx - w / 2).toFixed(0)} ${(cy - h / 2).toFixed(0)} ${w.toFixed(0)} ${h.toFixed(0)}`;
 };
-const MapImage = () => <image href="/landing/cubbon-park-map.webp" width={PLATE.width} height={PLATE.height} opacity={0.75} />;
-
-/* ---------- The film ---------- */
-
-export function Film() {
-  const video = useRef<HTMLVideoElement>(null);
-  const [muted, setMuted] = useState(true);
-
-  useEffect(() => {
-    const v = video.current;
-    if (!v) return;
-    // With reduced motion the film waits for the button instead of playing by itself.
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    const io = new IntersectionObserver(
-      ([e]) => {
-        if (e.isIntersecting) v.play().catch(() => {});
-        else v.pause();
-      },
-      { threshold: 0.35 },
-    );
-    io.observe(v);
-    return () => io.disconnect();
-  }, []);
-
-  const sound = () => {
-    const v = video.current;
-    if (!v) return;
-    v.muted = !muted;
-    if (muted) {
-      v.currentTime = 0;
-      v.play().catch(() => {});
-    }
-    setMuted(!muted);
-  };
-
-  return (
-    <section className={s.film} data-km="0" aria-label="Stride in 20 seconds">
-      <div className={s.filmFrame}>
-        <video
-          ref={video}
-          src="/landing/stride-film.mp4"
-          poster="/landing/stride-film-poster.webp"
-          muted
-          loop
-          playsInline
-          preload="metadata"
-        />
-        <button type="button" className={s.soundButton} onClick={sound}>
-          <SoundIcon on={!muted} />
-          {muted ? "Play with sound" : "Mute"}
-        </button>
-      </div>
-      <p className={s.filmCaption}>Stride in 20 seconds, on the same Cubbon Park loop. The film is made in code with Remotion.</p>
-    </section>
-  );
-}
-
-function SoundIcon({ on }: { on: boolean }) {
-  return (
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
-      <path d="M11 5 6 9H3v6h3l5 4V5z" fill="currentColor" />
-      {on ? <path d="M15.5 8.5a5 5 0 0 1 0 7M18.5 5.5a9 9 0 0 1 0 13" /> : <path d="m16 9 6 6m0-6-6 6" />}
-    </svg>
-  );
-}
+const MapImage = () => (
+  <image
+    href="/landing/cubbon-park-map.webp"
+    width={PLATE.width}
+    height={PLATE.height}
+    opacity={0.75}
+  />
+);
 
 /* ---------- 1 km: clean GPS ---------- */
 
@@ -150,13 +108,22 @@ const RAW = Array.from({ length: 72 }, (_, i) => {
   const [x, y] = pointAt(i / 71);
   const a = rand() * Math.PI * 2;
   const r = 6 + rand() * 20;
-  return { x: round(x + Math.cos(a) * r), y: round(y + Math.sin(a) * r), jump: false };
+  return {
+    x: round(x + Math.cos(a) * r),
+    y: round(y + Math.sin(a) * r),
+    jump: false,
+  };
 });
 for (const i of [12, 29, 45, 60]) {
   const a = rand() * Math.PI * 2;
-  RAW.splice(i, 0, { x: round(RAW[i].x + Math.cos(a) * 190), y: round(RAW[i].y + Math.sin(a) * 190), jump: true });
+  RAW.splice(i, 0, {
+    x: round(RAW[i].x + Math.cos(a) * 190),
+    y: round(RAW[i].y + Math.sin(a) * 190),
+    jump: true,
+  });
 }
-const RAW_PATH = "M" + RAW.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L");
+const RAW_PATH =
+  "M" + RAW.map((p) => `${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(" L");
 
 export function CleanGps() {
   const [mode, setMode] = useState<"raw" | "clean">("raw");
@@ -179,9 +146,10 @@ export function CleanGps() {
             Messy GPS in, a clean route out.
           </h2>
           <p className={s.lead}>
-            Phones guess. Under trees or between buildings a reading can drift 30 m, or leap across a road. Stride skips
-            any reading worse than 20 m and drops any point that would need an impossible speed for your sport, first on
-            the phone and again on the server.
+            Phones guess. Under trees or between buildings a reading can drift
+            30 m, or leap across a road. Stride skips any reading worse than 20
+            m and drops any point that would need an impossible speed for your
+            sport, first on the phone and again on the server.
           </p>
           <Toggle
             label="GPS view"
@@ -194,9 +162,24 @@ export function CleanGps() {
           />
         </div>
         <div ref={ref} className={s.gpsCard}>
-          <svg viewBox={box(5 / 4)} role="img" aria-label={clean ? "The cleaned route along the park paths" : "Raw GPS readings, with a few far off the route"}>
+          <svg
+            viewBox={box(5 / 4)}
+            role="img"
+            aria-label={
+              clean
+                ? "The cleaned route along the park paths"
+                : "Raw GPS readings, with a few far off the route"
+            }
+          >
             <MapImage />
-            <path d={RAW_PATH} fill="none" stroke="rgba(238,241,232,0.45)" strokeWidth={4} strokeLinejoin="round" style={{ opacity: clean ? 0 : 1, transition: "opacity 0.6s" }} />
+            <path
+              d={RAW_PATH}
+              fill="none"
+              stroke="rgba(238,241,232,0.45)"
+              strokeWidth={4}
+              strokeLinejoin="round"
+              style={{ opacity: clean ? 0 : 1, transition: "opacity 0.6s" }}
+            />
             <path
               className={s.cleanLine}
               d={ROUTE_PATH}
@@ -206,9 +189,23 @@ export function CleanGps() {
             />
             {RAW.map((p, i) =>
               p.jump ? (
-                <circle key={i} className={s.jumpDot} cx={p.x} cy={p.y} r={clean ? 0 : 15} style={{ opacity: clean ? 0 : 1 }} />
+                <circle
+                  key={i}
+                  className={s.jumpDot}
+                  cx={p.x}
+                  cy={p.y}
+                  r={clean ? 0 : 15}
+                  style={{ opacity: clean ? 0 : 1 }}
+                />
               ) : (
-                <circle key={i} className={s.rawDot} cx={p.x} cy={p.y} r={clean ? 5 : 9} style={{ opacity: clean ? 0.35 : 1 }} />
+                <circle
+                  key={i}
+                  className={s.rawDot}
+                  cx={p.x}
+                  cy={p.y}
+                  r={clean ? 5 : 9}
+                  style={{ opacity: clean ? 0.35 : 1 }}
+                />
               ),
             )}
           </svg>
@@ -217,11 +214,15 @@ export function CleanGps() {
               <i style={{ background: "rgba(238,241,232,0.7)" }} />
               GPS readings
             </span>
-            <span style={{ opacity: clean ? 0.4 : 1, transition: "opacity 0.5s" }}>
+            <span
+              style={{ opacity: clean ? 0.4 : 1, transition: "opacity 0.5s" }}
+            >
               <i style={{ background: "#ef4444" }} />
               Impossible jumps, dropped
             </span>
-            <span style={{ opacity: clean ? 1 : 0.4, transition: "opacity 0.5s" }}>
+            <span
+              style={{ opacity: clean ? 1 : 0.4, transition: "opacity 0.5s" }}
+            >
               <i style={{ background: "#c8f31d" }} />
               Your route
             </span>
@@ -269,7 +270,9 @@ export function Screens() {
   useEffect(() => {
     const io = new IntersectionObserver(
       (entries) => {
-        for (const e of entries) if (e.isIntersecting) setActive(Number((e.target as HTMLElement).dataset.i));
+        for (const e of entries)
+          if (e.isIntersecting)
+            setActive(Number((e.target as HTMLElement).dataset.i));
       },
       { rootMargin: "-45% 0px -45% 0px" },
     );
@@ -284,7 +287,9 @@ export function Screens() {
         <h2 id="screens-title" className={s.h2}>
           Run alone. Train together.
         </h2>
-        <p className={s.lead}>Real screens from the app, with sample people and activities.</p>
+        <p className={s.lead}>
+          Real screens from the app, with sample people and activities.
+        </p>
       </div>
       <div className={s.screens}>
         <div className={s.phoneSticky}>
@@ -292,7 +297,15 @@ export function Screens() {
             <div className={s.phoneScreen}>
               {SCREENS.map((sc, i) => (
                 // eslint-disable-next-line @next/next/no-img-element -- stacked screens that cross-fade
-                <img key={sc.src} src={sc.src} alt={i === active ? sc.title : ""} className={i === active ? s.on : ""} loading="lazy" width={560} height={1212} />
+                <img
+                  key={sc.src}
+                  src={sc.src}
+                  alt={i === active ? sc.title : ""}
+                  className={i === active ? s.on : ""}
+                  loading="lazy"
+                  width={560}
+                  height={1212}
+                />
               ))}
             </div>
           </div>
@@ -337,10 +350,31 @@ export function Privacy() {
     <section className={s.split} data-km="3" aria-labelledby="privacy-title">
       <div className={s.splitGrid}>
         <div ref={ref} className={s.privacyMap}>
-          <svg viewBox={box(1)} role="img" aria-label={others ? "The route as others see it, without its first and last 200 metres" : "The full route, as you see it"}>
+          <svg
+            viewBox={box(1)}
+            role="img"
+            aria-label={
+              others
+                ? "The route as others see it, without its first and last 200 metres"
+                : "The full route, as you see it"
+            }
+          >
             <MapImage />
-            <circle className={s.zone} cx={sx} cy={sy} r={ZONE_PX} style={{ opacity: others ? 1 : 0 }} />
-            <path d={ROUTE_PATH} fill="none" stroke="rgba(200,243,29,0.35)" strokeWidth={6} strokeDasharray="3 15" strokeLinecap="round" />
+            <circle
+              className={s.zone}
+              cx={sx}
+              cy={sy}
+              r={ZONE_PX}
+              style={{ opacity: others ? 1 : 0 }}
+            />
+            <path
+              d={ROUTE_PATH}
+              fill="none"
+              stroke="rgba(200,243,29,0.35)"
+              strokeWidth={6}
+              strokeDasharray="3 15"
+              strokeLinecap="round"
+            />
             <path
               d={ROUTE_PATH}
               fill="none"
@@ -349,18 +383,53 @@ export function Privacy() {
               strokeLinecap="round"
               strokeLinejoin="round"
               pathLength={1}
-              strokeDasharray={others ? `0 ${ZONE} ${1 - 2 * ZONE} 1` : "0 0 1 1"}
-              style={{ transition: "stroke-dasharray 1.2s cubic-bezier(0.16, 1, 0.3, 1)" }}
+              strokeDasharray={
+                others ? `0 ${ZONE} ${1 - 2 * ZONE} 1` : "0 0 1 1"
+              }
+              style={{
+                transition:
+                  "stroke-dasharray 1.2s cubic-bezier(0.16, 1, 0.3, 1)",
+              }}
             />
             <g style={{ opacity: others ? 0 : 1, transition: "opacity 0.6s" }}>
-              <circle cx={sx} cy={sy} r={20} fill="#22c55e" stroke="#121212" strokeWidth={7} />
+              <circle
+                cx={sx}
+                cy={sy}
+                r={20}
+                fill="#22c55e"
+                stroke="#121212"
+                strokeWidth={7}
+              />
             </g>
-            <g style={{ opacity: others ? 1 : 0, transition: "opacity 0.6s 0.6s" }}>
-              <circle cx={ax} cy={ay} r={14} fill="#c8f31d" stroke="#121212" strokeWidth={6} />
-              <circle cx={bx} cy={by} r={14} fill="#c8f31d" stroke="#121212" strokeWidth={6} />
+            <g
+              style={{
+                opacity: others ? 1 : 0,
+                transition: "opacity 0.6s 0.6s",
+              }}
+            >
+              <circle
+                cx={ax}
+                cy={ay}
+                r={14}
+                fill="#c8f31d"
+                stroke="#121212"
+                strokeWidth={6}
+              />
+              <circle
+                cx={bx}
+                cy={by}
+                r={14}
+                fill="#c8f31d"
+                stroke="#121212"
+                strokeWidth={6}
+              />
             </g>
           </svg>
-          <p className={s.mapNote}>{others ? "What everyone else sees: the route starts and ends 200 m from your door" : "What you see: your whole route"}</p>
+          <p className={s.mapNote}>
+            {others
+              ? "What everyone else sees: the route starts and ends 200 m from your door"
+              : "What you see: your whole route"}
+          </p>
         </div>
         <div className={s.splitText}>
           <SplitLabel>3 km</SplitLabel>
@@ -368,8 +437,10 @@ export function Privacy() {
             Your front door stays off the map.
           </h2>
           <p className={s.lead}>
-            You always see your whole route. Everyone else gets it without the first and last 200 m, so the place you start
-            from stays yours. The server trims it before it leaves, on activities and on the shared heatmap.
+            You always see your whole route. Everyone else gets it without the
+            first and last 200 m, so the place you start from stays yours. The
+            server trims it before it leaves, on activities and on the shared
+            heatmap.
           </p>
           <Toggle
             label="Who is looking"
@@ -386,11 +457,16 @@ export function Privacy() {
           <ul className={s.facts}>
             <li>
               <strong>Followers only, to start with</strong>
-              <span>New activities are shared with your followers. You choose if one goes public.</span>
+              <span>
+                New activities are shared with your followers. You choose if one
+                goes public.
+              </span>
             </li>
             <li>
               <strong>No ads, no trackers</strong>
-              <span>Nothing in the app or this site sells or shares what you do.</span>
+              <span>
+                Nothing in the app or this site sells or shares what you do.
+              </span>
             </li>
           </ul>
         </div>
@@ -427,55 +503,88 @@ const HIGHLIGHTS = [
   },
 ];
 
-const STACK = ["React Native", "Expo", "TypeScript", "Node.js", "Fastify", "PostgreSQL", "Next.js", "Tailwind CSS", "MapLibre", "Vitest", "GitHub Actions"];
+const STACK = [
+  "React Native",
+  "Expo",
+  "TypeScript",
+  "Node.js",
+  "Fastify",
+  "PostgreSQL",
+  "Next.js",
+  "Tailwind CSS",
+  "MapLibre",
+  "Vitest",
+  "GitHub Actions",
+];
 
 export function Finish() {
   return (
-    <section className={s.finish} data-km={ROUTE_KM} aria-labelledby="finish-title">
+    <section
+      className={s.finish}
+      data-km={ROUTE_KM}
+      aria-labelledby="finish-title"
+    >
       <SplitLabel>3.68 km, finish</SplitLabel>
       <h2 id="finish-title" className={s.finishHead}>
         Run saved.
       </h2>
 
-      <div className={s.summary}>
-        <div className={s.summaryTitle}>
-          <i aria-hidden="true">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#121212" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <path d="m5 12 5 5L20 7" />
-            </svg>
-          </i>
-          <div>
-            Morning run in Cubbon Park
-            <small>Built by one student, from the database to this page</small>
-          </div>
-        </div>
-        <dl className={s.stats}>
-          <div>
-            <dt>Distance</dt>
-            <dd>{ROUTE_KM.toFixed(2)} km</dd>
-          </div>
-          <div>
-            <dt>Time</dt>
-            <dd>{formatClock(ROUTE_KM * PACE_SECONDS)}</dd>
-          </div>
-          <div>
-            <dt>Pace</dt>
-            <dd>{formatClock(PACE_SECONDS)} /km</dd>
-          </div>
-        </dl>
-        <div className={s.awards}>
-          {BUILD.map((b) => (
-            <div key={b.label} className={s.award}>
-              <b>{b.value}</b>
-              <span>{b.label}</span>
+      <div className={s.finishGrid}>
+        <div className={s.summary}>
+          <div className={s.summaryTitle}>
+            <i aria-hidden="true">
+              <svg
+                width="22"
+                height="22"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#121212"
+                strokeWidth="3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="m5 12 5 5L20 7" />
+              </svg>
+            </i>
+            <div>
+              Morning run in Cubbon Park
+              <small>
+                Built by one student, from the database to this page
+              </small>
             </div>
-          ))}
+          </div>
+          <dl className={s.stats}>
+            <div>
+              <dt>Distance</dt>
+              <dd>{ROUTE_KM.toFixed(2)} km</dd>
+            </div>
+            <div>
+              <dt>Time</dt>
+              <dd>{formatClock(ROUTE_KM * PACE_SECONDS)}</dd>
+            </div>
+            <div>
+              <dt>Pace</dt>
+              <dd>{formatClock(PACE_SECONDS)} /km</dd>
+            </div>
+          </dl>
+          <div className={s.awards}>
+            {BUILD.map((b) => (
+              <div key={b.label} className={s.award}>
+                <b>{b.value}</b>
+                <span>{b.label}</span>
+              </div>
+            ))}
+          </div>
         </div>
+
+        <RunCard />
       </div>
 
       <div className={s.lineMap}>
         <h3 className={s.h3}>How it&apos;s built</h3>
-        <p className={s.lead}>Three apps and a database, joined like stops on a route.</p>
+        <p className={s.lead}>
+          Three apps and a database, joined like stops on a route.
+        </p>
         <LineMap />
         <div className={s.highlights}>
           {HIGHLIGHTS.map((h) => (
@@ -499,7 +608,12 @@ export function Finish() {
         <Link href="/download" className={s.secondary}>
           Get the Android app
         </Link>
-        <a href={GITHUB_URL} className={s.textLink} target="_blank" rel="noreferrer">
+        <a
+          href={GITHUB_URL}
+          className={s.textLink}
+          target="_blank"
+          rel="noreferrer"
+        >
           Read the code on GitHub
         </a>
       </div>
@@ -510,22 +624,92 @@ export function Finish() {
 // Phone app and website both talk to one API, which talks to one database.
 const WIDE = {
   view: "0 -40 1000 340",
-  tracks: ["M60 60 C 260 60 300 140 520 140 L 940 140", "M60 220 C 260 220 300 140 520 140"],
+  tracks: [
+    "M60 60 C 260 60 300 140 520 140 L 940 140",
+    "M60 220 C 260 220 300 140 520 140",
+  ],
   stops: [
-    { x: 60, y: 60, name: "Android and iPhone app", sub: "React Native, Expo", tx: 0, ty: -56, anchor: "start" },
-    { x: 60, y: 220, name: "Website and web app", sub: "Next.js on Vercel", tx: 0, ty: 40, anchor: "start" },
-    { x: 520, y: 140, name: "API", sub: "Fastify on Render", tx: 0, ty: -60, anchor: "middle" },
-    { x: 940, y: 140, name: "Database", sub: "PostgreSQL on Neon", tx: 0, ty: 40, anchor: "end" },
+    {
+      x: 60,
+      y: 60,
+      name: "Android and iPhone app",
+      sub: "React Native, Expo",
+      tx: 0,
+      ty: -56,
+      anchor: "start",
+    },
+    {
+      x: 60,
+      y: 220,
+      name: "Website and web app",
+      sub: "Next.js on Vercel",
+      tx: 0,
+      ty: 40,
+      anchor: "start",
+    },
+    {
+      x: 520,
+      y: 140,
+      name: "API",
+      sub: "Fastify on Render",
+      tx: 0,
+      ty: -60,
+      anchor: "middle",
+    },
+    {
+      x: 940,
+      y: 140,
+      name: "Database",
+      sub: "PostgreSQL on Neon",
+      tx: 0,
+      ty: 40,
+      anchor: "end",
+    },
   ],
 } as const;
 const TALL = {
   view: "0 -40 360 540",
-  tracks: ["M40 50 C 40 170 180 170 180 300 L 180 460", "M320 50 C 320 170 180 170 180 300"],
+  tracks: [
+    "M40 50 C 40 170 180 170 180 300 L 180 460",
+    "M320 50 C 320 170 180 170 180 300",
+  ],
   stops: [
-    { x: 40, y: 50, name: "Android and iPhone app", sub: "React Native, Expo", tx: -30, ty: -60, anchor: "start" },
-    { x: 320, y: 50, name: "Website and web app", sub: "Next.js on Vercel", tx: 30, ty: -60, anchor: "end" },
-    { x: 180, y: 300, name: "API", sub: "Fastify on Render", tx: 26, ty: -10, anchor: "start" },
-    { x: 180, y: 460, name: "Database", sub: "PostgreSQL on Neon", tx: 26, ty: -10, anchor: "start" },
+    {
+      x: 40,
+      y: 50,
+      name: "Android and iPhone app",
+      sub: "React Native, Expo",
+      tx: -30,
+      ty: -60,
+      anchor: "start",
+    },
+    {
+      x: 320,
+      y: 50,
+      name: "Website and web app",
+      sub: "Next.js on Vercel",
+      tx: 30,
+      ty: -60,
+      anchor: "end",
+    },
+    {
+      x: 180,
+      y: 300,
+      name: "API",
+      sub: "Fastify on Render",
+      tx: 26,
+      ty: -10,
+      anchor: "start",
+    },
+    {
+      x: 180,
+      y: 460,
+      name: "Database",
+      sub: "PostgreSQL on Neon",
+      tx: 26,
+      ty: -10,
+      anchor: "start",
+    },
   ],
 } as const;
 
@@ -533,7 +717,13 @@ function LineMap() {
   return (
     <>
       {[WIDE, TALL].map((m) => (
-        <svg key={m.view} viewBox={m.view} className={m === WIDE ? s.lineWide : s.lineTall} role="img" aria-label="The phone app and the website both use one API, which stores everything in one database">
+        <svg
+          key={m.view}
+          viewBox={m.view}
+          className={m === WIDE ? s.lineWide : s.lineTall}
+          role="img"
+          aria-label="The phone app and the website both use one API, which stores everything in one database"
+        >
           {m.tracks.map((d) => (
             <g key={d}>
               <path className={s.track} d={d} />
@@ -543,10 +733,21 @@ function LineMap() {
           {m.stops.map((st) => (
             <g key={st.name}>
               <circle className={s.stop} cx={st.x} cy={st.y} r={11} />
-              <text x={st.x + st.tx} y={st.y + st.ty} textAnchor={st.anchor} dominantBaseline="middle">
+              <text
+                x={st.x + st.tx}
+                y={st.y + st.ty}
+                textAnchor={st.anchor}
+                dominantBaseline="middle"
+              >
                 {st.name}
               </text>
-              <text className={s.sub} x={st.x + st.tx} y={st.y + st.ty + 20} textAnchor={st.anchor} dominantBaseline="middle">
+              <text
+                className={s.sub}
+                x={st.x + st.tx}
+                y={st.y + st.ty + 20}
+                textAnchor={st.anchor}
+                dominantBaseline="middle"
+              >
                 {st.sub}
               </text>
             </g>

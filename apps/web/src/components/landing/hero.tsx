@@ -16,6 +16,7 @@ const ease = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - (-2 * t + 2) ** 3 / 2
 // The first screen: the real Cubbon Park map, a real 3.68 km loop drawing itself on it like a
 // run being recorded, then a runner dot that keeps going round. One moment, on load.
 export function Hero() {
+  const hero = useRef<HTMLElement>(null);
   const plate = useRef<HTMLDivElement>(null);
   const line = useRef<SVGPathElement>(null);
   const glow = useRef<SVGPathElement>(null);
@@ -80,7 +81,22 @@ export function Hero() {
     };
     if (fine) window.addEventListener("pointermove", onMove, { passive: true });
 
+    // Scrolling past the hero flies the camera down into the map.
+    let flyFrame = 0;
+    const onScroll = () => {
+      if (flyFrame) return;
+      flyFrame = requestAnimationFrame(() => {
+        flyFrame = 0;
+        const f = Math.min(1, Math.max(0, window.scrollY / window.innerHeight));
+        hero.current?.style.setProperty("--fly", f.toFixed(3));
+      });
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+
     return () => {
+      cancelAnimationFrame(flyFrame);
+      window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(frame);
       io.disconnect();
       window.removeEventListener("pointermove", onMove);
@@ -90,7 +106,7 @@ export function Hero() {
   const [sx, sy] = ROUTE_POINTS[0];
 
   return (
-    <section className={s.hero} aria-labelledby="hero-title">
+    <section ref={hero} className={s.hero} aria-labelledby="hero-title">
       <div className={s.plateWrap} aria-hidden="true">
         <div ref={plate} className={s.plate}>
           {/* eslint-disable-next-line @next/next/no-img-element -- a fixed-size map plate the SVG is laid on */}
