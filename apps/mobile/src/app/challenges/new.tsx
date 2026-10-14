@@ -1,5 +1,4 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   ACTIVITY_LABELS,
   ACTIVITY_TYPES,
@@ -22,11 +21,11 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
 import { Avatar } from '@/components/avatar';
+import { DateField } from '@/components/date-field';
 import { CATEGORY_LOOKS } from '@/constants/categories';
 import { INK, LIME, useColors } from '@/constants/theme';
 import { api } from '@/lib/api';
@@ -54,7 +53,6 @@ const startOfToday = () => {
 // Create a Challenge: a name, which sport counts, the goal, the dates, and friends to invite.
 export default function NewChallengeScreen() {
   const colors = useColors();
-  const scheme = useColorScheme();
   const { user } = useAuth();
   const [title, setTitle] = useState('');
   const [sport, setSport] = useState<ActivityType | null>('run');
@@ -118,7 +116,6 @@ export default function NewChallengeScreen() {
   };
 
   const input = [styles.input, { backgroundColor: colors.raised, borderColor: colors.border, color: colors.text }];
-  const picker = { accentColor: colors.accent, themeVariant: scheme === 'dark' ? 'dark' : 'light' } as const;
   const today = startOfToday();
 
   return (
@@ -158,16 +155,16 @@ export default function NewChallengeScreen() {
         <View style={[styles.field, { backgroundColor: colors.raised, borderColor: colors.border }]}>
           <MaterialCommunityIcons name="calendar-start" size={22} color={colors.text} />
           <Text style={[styles.fieldText, { color: colors.text }]}>Starts</Text>
-          <DateTimePicker value={start} mode="date" display="compact" {...picker}
+          <DateField value={start} mode="date"
             minimumDate={today} maximumDate={new Date(today.getTime() + 61 * DAY_MS)}
-            onValueChange={(_, d) => pickStart(d)} />
+            onChange={pickStart} />
         </View>
         <View style={[styles.field, { backgroundColor: colors.raised, borderColor: colors.border }]}>
           <MaterialCommunityIcons name="calendar-end" size={22} color={colors.text} />
           <Text style={[styles.fieldText, { color: colors.text }]}>Ends</Text>
-          <DateTimePicker value={end} mode="date" display="compact" {...picker}
+          <DateField value={end} mode="date"
             minimumDate={start} maximumDate={new Date(start.getTime() + (CUSTOM_CHALLENGE_MAX_DAYS - 1) * DAY_MS)}
-            onValueChange={(_, d) => setEnd(d)} />
+            onChange={setEnd} />
         </View>
 
         {preview && (

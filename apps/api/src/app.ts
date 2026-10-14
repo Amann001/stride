@@ -55,8 +55,11 @@ export async function buildApp() {
     },
   });
 
-  // Allow the website (running on another port) to call this API.
-  await app.register(cors, { origin: true });
+  // Allow the website and the web app (other addresses) to call this API from a browser. The
+  // browser checks the method first, and the default list is only GET, HEAD and POST, which
+  // would block editing (PATCH/PUT) and deleting (DELETE) in the web app. Logins travel in the
+  // Authorization header, never in cookies, so other websites can't act as a signed-in user.
+  await app.register(cors, { origin: true, methods: ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE'] });
   await app.register(jwt, { secret: config.jwtSecret, sign: { expiresIn: '30d' } });
   // Limits are switched on per route (login, sign-up, account deletion), not everywhere.
   await app.register(rateLimit, {

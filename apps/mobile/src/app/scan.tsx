@@ -1,7 +1,7 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
 import { useState } from 'react';
-import { Linking, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Linking, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { INK, useColors } from '@/constants/theme';
 
@@ -17,15 +17,18 @@ export default function ScanScreen() {
   if (!permission) return <View style={styles.screen} />;
 
   if (!permission.granted) {
+    // A browser has no Settings app to open: blocked camera access is changed in the browser.
+    const askAgain = permission.canAskAgain || Platform.OS === 'web';
     return (
       <View style={[styles.screen, styles.center, { backgroundColor: colors.background }]}>
         <Text style={[styles.title, { color: colors.text }]}>Camera access needed</Text>
         <Text style={{ color: colors.textSecondary, textAlign: 'center' }}>
           Stride uses the camera only to scan a friend’s QR code.
+          {Platform.OS === 'web' ? ' If you blocked it before, allow the camera for this site in your browser settings.' : ''}
         </Text>
         <Pressable style={[styles.button, { backgroundColor: colors.brand }]}
-          onPress={permission.canAskAgain ? requestPermission : () => Linking.openSettings()}>
-          <Text style={styles.buttonText}>{permission.canAskAgain ? 'Allow Camera' : 'Open Settings'}</Text>
+          onPress={askAgain ? requestPermission : () => Linking.openSettings()}>
+          <Text style={styles.buttonText}>{askAgain ? 'Allow Camera' : 'Open Settings'}</Text>
         </Pressable>
       </View>
     );

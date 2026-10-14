@@ -22,9 +22,16 @@ const LOGO_ON_DARK = require('@/assets/images/logo-on-dark.png');
 const LOGO_ON_LIGHT = require('@/assets/images/logo-on-light.png');
 const LOGO_HEIGHT = 48;
 
+// The logo files' sizes, for the web app: browsers can't read them from the file the way
+// phones do (React Native for web has no Image.resolveAssetSource).
+const WEB_LOGO_SIZES = new Map<number, { width: number; height: number }>([
+  [LOGO_ON_DARK, { width: 1409, height: 360 }],
+  [LOGO_ON_LIGHT, { width: 1362, height: 360 }],
+]);
+
 // Sizes the logo from the image file's own proportions, so it never stretches.
 function logoSize(source: number) {
-  const { width, height } = Image.resolveAssetSource(source);
+  const { width, height } = Image.resolveAssetSource?.(source) ?? WEB_LOGO_SIZES.get(source) ?? { width: 1400, height: 360 };
   return { height: LOGO_HEIGHT, width: (LOGO_HEIGHT * width) / height };
 }
 

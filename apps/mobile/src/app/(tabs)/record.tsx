@@ -22,7 +22,7 @@ import { activateKeepAwakeAsync, deactivateKeepAwake } from 'expo-keep-awake';
 import { router, useIsFocused } from 'expo-router';
 import * as Speech from 'expo-speech';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { RouteMap } from '@/components/route-map';
@@ -89,9 +89,11 @@ export default function RecordScreen() {
   // Keep the screen on while recording. In Expo Go, GPS stops if the app goes to the background.
   useEffect(() => {
     if (rec.status === 'idle') return;
-    activateKeepAwakeAsync('recording');
+    // A browser may refuse (battery saver, for example): the screen can then dim, but the
+    // recording carries on, so that's not an error.
+    activateKeepAwakeAsync('recording').catch(() => {});
     return () => {
-      deactivateKeepAwake('recording');
+      deactivateKeepAwake('recording').catch(() => {});
     };
   }, [rec.status]);
 
@@ -216,7 +218,8 @@ export default function RecordScreen() {
     rec.status === 'recording' ? { text: 'Recording', bg: colors.brand, fg: INK }
     : rec.status === 'paused' ? { text: 'Paused', bg: '#F59E0B', fg: INK }
     : gps === 'ready' ? { text: 'GPS Acquired', bg: '#15803D', fg: '#fff' }
-    : gps === 'denied' ? { text: 'Location is off. Turn it on in Settings', bg: colors.danger, fg: '#fff' }
+    : gps === 'denied'
+      ? { text: Platform.OS === 'web' ? 'Location is off. Allow it for this site in your browser' : 'Location is off. Turn it on in Settings', bg: colors.danger, fg: '#fff' }
     : { text: 'Acquiring GPS…', bg: colors.border, fg: colors.text };
 
   const controls = (
@@ -319,6 +322,12 @@ export default function RecordScreen() {
         </>
       )}
 
+      {/* A browser stops reading GPS when you switch apps or lock the phone. */}
+      {Platform.OS === 'web' && rec.status === 'idle' && (
+        <Text style={[styles.webHint, { color: colors.textSecondary, backgroundColor: colors.card }]}>
+          Keep Stride open with the screen on while you record.
+        </Text>
+      )}
       <View style={{ backgroundColor: colors.card }}>{controls}</View>
 
       <SportSheet visible={sportSheetOpen} selected={type} onSelect={setType} onClose={() => setSportSheetOpen(false)} />
@@ -370,6 +379,7 @@ const styles = StyleSheet.create({
   panelValue: { fontSize: 26, fontWeight: '700', fontVariant: ['tabular-nums'] },
   panelLabel: { fontSize: 12, marginTop: 2 },
   error: { textAlign: 'center', paddingHorizontal: 20, paddingBottom: 8 },
+  webHint: { textAlign: 'center', fontSize: 13, paddingTop: 10, paddingHorizontal: 20 },
   controls: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-around', paddingTop: 12 },
   centerControl: { alignItems: 'center', width: 110 },
   bigButton: { width: 76, height: 76, borderRadius: 38, alignItems: 'center', justifyContent: 'center' },

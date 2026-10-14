@@ -41,3 +41,6 @@ example
 # generated native folders
 /ios
 /android
+
+# Copied from node_modules for the local web dev server (the web build copies its own).
+/public/maplibre-gl-worker.mjs

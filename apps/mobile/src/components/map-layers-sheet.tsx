@@ -16,8 +16,8 @@ const MAP_STYLES: { key: MapStyle; label: string }[] = [
   { key: 'hybrid', label: 'Hybrid' },
   { key: 'mutedStandard', label: 'Muted' },
 ];
-// Android has no hybrid (satellite with roads on top); see android-map-style.ts.
-const AVAILABLE_STYLES = Platform.OS === 'android' ? MAP_STYLES.filter((m) => ANDROID_MAP_STYLES.includes(m.key)) : MAP_STYLES;
+// Android and the web app have no hybrid (satellite with roads on top); see android-map-style.ts.
+const AVAILABLE_STYLES = Platform.OS !== 'ios' ? MAP_STYLES.filter((m) => ANDROID_MAP_STYLES.includes(m.key)) : MAP_STYLES;
 
 // Colours for the little heatmap pictures, matching the real tiles.
 const HEAT_COLORS: Record<HeatmapKind, [string, string]> = {

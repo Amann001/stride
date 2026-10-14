@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="%LANG_ISO_CODE%">
+  <head>
+    <meta charset="utf-8" />
+    <meta httpEquiv="X-UA-Compatible" content="IE=edge" />
+    <!-- viewport-fit=cover lets the app draw under the iPhone notch and home bar; the app keeps
+         its content inside the safe area itself. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>%WEB_TITLE%</title>
+    <meta name="description" content="Free, private fitness tracking for runs, rides, walks and hikes." />
+
+    <!-- Installable app ("Add to Home Screen"): Android and computers read the manifest, iPhone reads the apple-* tags. -->
+    <link rel="manifest" href="/app/manifest.webmanifest" />
+    <meta name="theme-color" content="#121212" />
+    <meta name="color-scheme" content="dark light" />
+    <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="Stride" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+
+    <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
+    <style id="expo-reset">
+      /* These styles make the body full-height */
+      html,
+      body {
+        height: 100%;
+        background: #121212;
+      }
+      /* These styles disable body scrolling if you are using <ScrollView> */
+      body {
+        overflow: hidden;
+        overscroll-behavior: none;
+      }
+      /* These styles make the root element full-height */
+      #root {
+        display: flex;
+        height: 100%;
+        flex: 1;
+      }
+      /* Shown for the moment before the app's code has loaded, so it never flashes white. */
+      #boot {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: #121212;
+      }
+      #boot img {
+        width: 220px;
+        height: auto;
+      }
+    </style>
+    <script>
+      // Keeps the app opening fast and working on a weak signal (see sw.js).
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function () {
+          navigator.serviceWorker.register('/app/sw.js', { scope: '/app' }).catch(function () {});
+        });
+      }
+    </script>
+  </head>
+
+  <body>
+    <noscript>
+      You need to enable JavaScript to run Stride.
+    </noscript>
+    <!-- The root element for the app. -->
+    <div id="root"><div id="boot"><img src="/app/icons/wordmark.png" alt="Stride" /></div></div>
+  </body>
+</html>

@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# The web app, built from apps/mobile on every deploy (scripts/build-web-app.mjs).
+/public/app/

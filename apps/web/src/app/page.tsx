@@ -44,7 +44,7 @@ const FEATURES = [
 ];
 
 const NUMBERS = [
-  { value: "146", label: "automated tests on every change" },
+  { value: "147", label: "automated tests on every change" },
   { value: "~75", label: "API endpoints" },
   { value: "22", label: "database tables" },
   { value: "₹0", label: "to run, all on free services" },
@@ -75,6 +75,10 @@ export default function Home() {
           <Link href="/login" className="rounded-lg bg-brand px-6 py-3 font-semibold text-brand-ink hover:opacity-90">
             Get started
           </Link>
+          {/* The full app in the browser (a plain link: /app is the web app, not a page of this site). */}
+          <a href="/app" className="rounded-lg border border-zinc-400 px-6 py-3 font-semibold hover:border-accent dark:border-zinc-700">
+            Open the web app
+          </a>
           <Link href="/download" className="rounded-lg border border-zinc-400 px-6 py-3 font-semibold hover:border-accent dark:border-zinc-700">
             Get the Android app
           </Link>
@@ -138,9 +142,14 @@ export default function Home() {
 
       <section className="mt-16 rounded-2xl bg-brand-ink p-8 text-center text-white">
         <h2 className="text-2xl font-bold">Try Stride</h2>
-        <p className="mt-2 text-zinc-400">Free, with no ads. Install it on Android, or use this website on any device.</p>
+        <p className="mt-2 text-zinc-400">
+          Free, with no ads. Install it on Android, or open the web app in Safari or Chrome on any phone or computer.
+        </p>
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          <Link href="/download" className="rounded-lg bg-brand px-6 py-3 font-semibold text-brand-ink hover:opacity-90">
+          <a href="/app" className="rounded-lg bg-brand px-6 py-3 font-semibold text-brand-ink hover:opacity-90">
+            Open the web app
+          </a>
+          <Link href="/download" className="rounded-lg border border-zinc-600 px-6 py-3 font-semibold hover:border-brand">
             Get the Android app
           </Link>
           <Link href="/login" className="rounded-lg border border-zinc-600 px-6 py-3 font-semibold hover:border-brand">

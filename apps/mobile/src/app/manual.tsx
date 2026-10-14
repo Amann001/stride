@@ -1,5 +1,4 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
-import DateTimePicker from '@react-native-community/datetimepicker';
 import {
   ACTIVITY_LABELS,
   defaultActivityTitle,
@@ -18,10 +17,10 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  useColorScheme,
   View,
 } from 'react-native';
 
+import { DateField } from '@/components/date-field';
 import { SportSheet } from '@/components/sport-sheet';
 import { CATEGORY_LOOKS } from '@/constants/categories';
 import { INK, useColors } from '@/constants/theme';
@@ -31,7 +30,6 @@ import { api } from '@/lib/api';
 // ride on a bike computer. It counts for totals, streaks, goals and challenges.
 export default function ManualActivityScreen() {
   const colors = useColors();
-  const scheme = useColorScheme();
   const [type, setType] = useState<ActivityType>('run');
   const [title, setTitle] = useState('');
   const [startedAt, setStartedAt] = useState(() => new Date());
@@ -87,9 +85,7 @@ export default function ManualActivityScreen() {
         <View style={[styles.field, { backgroundColor: colors.card, borderColor: colors.border }]}>
           <MaterialCommunityIcons name="calendar-clock" size={22} color={colors.text} />
           <Text style={[styles.fieldText, { color: colors.text }]}>Started</Text>
-          <DateTimePicker value={startedAt} mode="datetime" display="compact" maximumDate={new Date()}
-            accentColor={colors.accent} themeVariant={scheme === 'dark' ? 'dark' : 'light'}
-            onValueChange={(_, d) => setStartedAt(d)} />
+          <DateField value={startedAt} mode="datetime" maximumDate={new Date()} onChange={setStartedAt} />
         </View>
 
         <Text style={[styles.label, { color: colors.textSecondary }]}>Duration</Text>
