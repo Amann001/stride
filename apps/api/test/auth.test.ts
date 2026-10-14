@@ -87,6 +87,25 @@ describe('sign up and log in', () => {
   });
 });
 
+describe('the web app (browsers)', () => {
+  it('lets browsers edit and delete, not only read and create', async () => {
+    // A browser asks first ("preflight") before PATCH, PUT or DELETE from another address.
+    for (const method of ['PATCH', 'PUT', 'DELETE']) {
+      const res = await app.inject({
+        method: 'OPTIONS',
+        url: '/me',
+        headers: {
+          origin: 'https://stride-amanswamy.vercel.app',
+          'access-control-request-method': method,
+          'access-control-request-headers': 'authorization,content-type',
+        },
+      });
+      expect(res.statusCode).toBe(204);
+      expect(String(res.headers['access-control-allow-methods'])).toContain(method);
+    }
+  });
+});
+
 describe('your account', () => {
   it('edits the profile, and empty text clears bio and location', async () => {
     const user = await createUser(app, 'Profile');

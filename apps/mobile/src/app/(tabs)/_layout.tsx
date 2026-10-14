@@ -1,6 +1,7 @@
 import MaterialCommunityIcons from '@expo/vector-icons/MaterialCommunityIcons';
 import { Tabs } from 'expo-router';
-import { StyleSheet, Text, View, type ColorValue } from 'react-native';
+import { Platform, StyleSheet, Text, View, type ColorValue } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { IconName } from '@/constants/categories';
 import { useColors } from '@/constants/theme';
@@ -33,13 +34,17 @@ function AvatarIcon({ color, focused }: TabIconProps) {
 // The bottom tab bar: Home, Maps, Record, Groups, You. Each screen draws its own header.
 export default function TabsLayout() {
   const colors = useColors();
+  const insets = useSafeAreaInsets();
+  // In a browser the standard bar is a little too short for the labels under the icons, and
+  // an installed iPhone web app needs room for the home bar.
+  const webBar = Platform.OS === 'web' ? { height: 60 + insets.bottom, paddingTop: 4, paddingBottom: 6 + insets.bottom } : null;
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: colors.accent,
         tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border },
+        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border, ...webBar },
         tabBarLabelStyle: { fontWeight: '600' },
       }}>
       <Tabs.Screen name="index" options={{ title: 'Home', tabBarIcon: icon('home-outline', 'home') }} />

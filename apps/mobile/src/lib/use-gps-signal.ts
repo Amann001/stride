@@ -2,6 +2,7 @@ import * as Location from 'expo-location';
 import { useEffect, useState } from 'react';
 
 import { MAX_ACCURACY_M } from '@/lib/use-recorder';
+import { watchLocation } from '@/lib/watch-location';
 
 export type GpsSignal = 'searching' | 'ready' | 'denied';
 
@@ -12,7 +13,7 @@ export function useGpsSignal(enabled: boolean): GpsSignal {
 
   useEffect(() => {
     if (!enabled) return;
-    let subscription: Location.LocationSubscription | null = null;
+    let subscription: { remove: () => void } | null = null;
     let cancelled = false;
     (async () => {
       const { granted } = await Location.requestForegroundPermissionsAsync();
@@ -21,9 +22,8 @@ export function useGpsSignal(enabled: boolean): GpsSignal {
         setSignal('denied');
         return;
       }
-      const sub = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.BestForNavigation, timeInterval: 1000, distanceInterval: 0 },
-        (loc) => setSignal(loc.coords.accuracy != null && loc.coords.accuracy <= MAX_ACCURACY_M ? 'ready' : 'searching'),
+      const sub = await watchLocation({ timeInterval: 1000, distanceInterval: 0 }, (loc) =>
+        setSignal(loc.accuracy != null && loc.accuracy <= MAX_ACCURACY_M ? 'ready' : 'searching'),
       );
       if (cancelled) sub.remove();
       else subscription = sub;

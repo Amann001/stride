@@ -9,6 +9,14 @@ export const metadata: Metadata = {
   description: "Download the Stride app for Android: record runs, rides, walks and hikes, and follow friends.",
 };
 
+// The web app (/app) works on any phone: added to the Home Screen it opens full screen with
+// its own icon, like an installed app.
+const WEB_APP_STEPS = [
+  { title: "Open the web app in Safari", text: "Go to stride-amanswamy.vercel.app/app and log in or sign up." },
+  { title: "Tap Share, then “Add to Home Screen”", text: "On Android in Chrome: tap ⋮, then “Add to Home screen” or “Install app”." },
+  { title: "Open Stride from your Home Screen", text: "It opens full screen with its own icon. Keep it open with the screen on while you record." },
+];
+
 const STEPS = [
   {
     title: "Tap Download",
@@ -98,13 +106,44 @@ export default function DownloadPage() {
         </p>
       </section>
 
+      <section className="mt-14">
+        <h2 className="text-xl font-bold">On an iPhone? Add Stride to your Home Screen</h2>
+        <p className="mt-2 text-zinc-500">
+          The full Stride app also runs in your browser: record, maps, friends, challenges and clubs, with the same account.
+          Nothing to download.
+        </p>
+        <ol className="mt-4 space-y-4">
+          {WEB_APP_STEPS.map((step, i) => (
+            <li key={step.title} className="flex gap-4">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand font-bold text-brand-ink">
+                {i + 1}
+              </span>
+              <div>
+                <p className="font-semibold">{step.title}</p>
+                <p className="text-zinc-500">{step.text}</p>
+              </div>
+            </li>
+          ))}
+        </ol>
+        <a
+          href="/app"
+          className="mt-6 inline-block rounded-lg bg-brand px-6 py-3 font-semibold text-brand-ink hover:opacity-90"
+        >
+          Open the web app
+        </a>
+      </section>
+
       <section className="mt-14 text-center text-zinc-500">
         <p>
-          On an iPhone or a computer? Use Stride on this website:{" "}
+          On a computer? Use the{" "}
+          <a href="/app" className="font-semibold text-accent hover:underline">
+            web app
+          </a>
+          , or{" "}
           <Link href="/login" className="font-semibold text-accent hover:underline">
-            log in or sign up
-          </Link>
-          .
+            log in here
+          </Link>{" "}
+          to see your activities, routes and stats on a bigger screen.
         </p>
       </section>
     </div>

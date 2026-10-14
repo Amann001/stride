@@ -10,13 +10,13 @@
 Record activities with GPS, follow friends, join challenges and clubs, and see your progress,
 on Android, iPhone and the web.
 
-**[Website](https://stride-amanswamy.vercel.app)** · **[Download for Android](https://stride-amanswamy.vercel.app/download)** · [Privacy policy](https://stride-api-sa5e.onrender.com/privacy)
+**[Website](https://stride-amanswamy.vercel.app)** · **[Open the web app](https://stride-amanswamy.vercel.app/app)** · **[Download for Android](https://stride-amanswamy.vercel.app/download)** · [Privacy policy](https://stride-api-sa5e.onrender.com/privacy)
 
 ![TypeScript](https://img.shields.io/badge/TypeScript-strict-3178C6?logo=typescript&logoColor=white)
 ![React Native](https://img.shields.io/badge/React_Native-Expo_57-000020?logo=expo&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-Fastify_5-000000?logo=fastify&logoColor=white)
 ![PostgreSQL](https://img.shields.io/badge/PostgreSQL-Neon-4169E1?logo=postgresql&logoColor=white)
-![Tests](https://img.shields.io/badge/tests-146_passing-C8F31D)
+![Tests](https://img.shields.io/badge/tests-147_passing-C8F31D)
 ![Cost](https://img.shields.io/badge/running_cost-%E2%82%B90-C8F31D)
 
 </div>
@@ -39,7 +39,8 @@ on Android, iPhone and the web.
 
 Stride is a full-stack fitness app in the style of Strava, built from scratch as a 3rd-year
 project and used by real people. One codebase gives an **Android app**, an **iPhone app**, a
-**website** and a **backend server**. All of them share the same rules for data and GPS maths.
+**web app** that installs from Safari or Chrome, a **website** and a **backend server**. All of them
+share the same rules for data and GPS maths.
 
 Three ideas shaped it:
 
@@ -63,6 +64,7 @@ Three ideas shaped it:
 | **Maps** | All your routes on one map, suggested routes, routes you draw yourself, personal and shared heatmaps, and Standard, Dark and Satellite maps. |
 | **Notifications** | Follows, kudos, comments, challenge invites and messages, in the app and as push notifications on Android. Tapping one opens what it's about. |
 | **Safety** | Who-can-see per activity (Everyone, Followers, Only you), a 200 m privacy zone, blocking and reporting, and account deletion that erases everything. |
+| **Web app** | The whole app in Safari or Chrome at [/app](https://stride-amanswamy.vercel.app/app): recording with GPS, maps, friends, challenges and clubs. Add it to the Home Screen and it opens full screen with its own icon, and still opens with no signal. |
 | **Website** | Log in to see your activities, routes and stats on a bigger screen, and download the Android app. |
 
 ## How it's built
@@ -103,7 +105,7 @@ flowchart LR
 | Testing | Vitest, PGlite (Postgres running in memory) for end-to-end API tests |
 | Hosting and ops | Render (API), Neon (database), Vercel (website), Expo EAS (builds and over-the-air updates), GitHub Actions (CI, backups, uptime) |
 
-**In numbers:** 146 automated tests · about 75 API endpoints · 22 database tables · 11 migrations ·
+**In numbers:** 147 automated tests · about 75 API endpoints · 22 database tables · 11 migrations ·
 ₹0 a month to run.
 
 ## Engineering highlights
@@ -139,7 +141,7 @@ flowchart LR
 ## Tests
 
 ```bash
-npm test     # all 146 tests, about 30 seconds
+npm test     # all 147 tests, about 30 seconds
 ```
 
 | Suite | What it covers |
@@ -193,6 +195,7 @@ private networks. To check layouts without a phone, run `npx expo start --web` i
 - [x] Monthly challenges and your own challenges with invites and leaderboards
 - [x] Push notifications, progress charts, goals and streaks
 - [x] Automated tests, CI, backups, uptime monitoring, website and Android download page
+- [x] Web app for iPhone and Android browsers, installable from the Home Screen
 - [ ] Google Play and App Store listings
 - [ ] Background GPS recording (screen off)
 - [ ] Photos on activities
@@ -214,6 +217,7 @@ Built by **Aman Swamy** ([@Amann001](https://github.com/Amann001)).
 | Database | Neon (Singapore) |
 | API | Render, `https://stride-api-sa5e.onrender.com` (free plan, Singapore). Redeploys on every push to `main` and runs new migrations on start. Config: [`render.yaml`](render.yaml) |
 | Website | Vercel, https://stride-amanswamy.vercel.app (project `stride-app`, folder `apps/web`). `NEXT_PUBLIC_API_URL` is set in the Vercel project settings |
+| Web app | Same Vercel project, at `/app`. Every website build first builds the app (`apps/mobile`) for browsers into `apps/web/public/app` ([`build-web-app.mjs`](apps/web/scripts/build-web-app.mjs)); if that fails, Vercel keeps the previous version online. Browser-only code lives in `*.web.tsx` / `*.web.ts` files, which the phone apps never include |
 | Android app | APK built on Expo EAS. The current download link and version live in [`apps/web/src/lib/android-app.ts`](apps/web/src/lib/android-app.ts) |
 | iPhone app | Expo Go, loading the `production` update channel |
 

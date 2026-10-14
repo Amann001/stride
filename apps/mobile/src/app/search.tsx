@@ -13,6 +13,7 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -114,7 +115,10 @@ function Friends() {
         <>
           <View style={styles.views}>
             <ViewTab icon="account-multiple-plus-outline" label="Suggested" active={view === 'suggested'} onPress={() => setView('suggested')} />
-            <ViewTab icon="card-account-phone-outline" label="Contacts" active={view === 'contacts'} onPress={() => setView('contacts')} />
+            {/* Browsers can't read your phone's contacts, so the web app skips this tab. */}
+            {Platform.OS !== 'web' && (
+              <ViewTab icon="card-account-phone-outline" label="Contacts" active={view === 'contacts'} onPress={() => setView('contacts')} />
+            )}
             <ViewTab icon="qrcode" label="QR Code" active={view === 'qr'} onPress={() => setView('qr')} />
           </View>
 

@@ -2,6 +2,9 @@ import { CATEGORIES, distanceBetween, isGpsJump, type ActivityType, type TrackPo
 import * as Location from 'expo-location';
 import { Pedometer } from 'expo-sensors';
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { Platform } from 'react-native';
+
+import { watchLocation } from '@/lib/watch-location';
 
 // The heart of the app: listens to GPS while you record and keeps a live
 // timer and distance. Pausing stops the timer and ignores GPS until you resume.
@@ -26,7 +29,7 @@ export function useRecorder() {
   // Null when not counting (rides), or if the phone has no step counter or said no.
   const [steps, setSteps] = useState<number | null>(null);
 
-  const subscription = useRef<Location.LocationSubscription | null>(null);
+  const subscription = useRef<{ remove: () => void } | null>(null);
   const lastPoint = useRef<TrackPoint | null>(null);
   const activityType = useRef<ActivityType>('run');
   // Timer bookkeeping: time from finished stretches plus when the current stretch began.
@@ -48,14 +51,14 @@ export function useRecorder() {
   }, []);
 
   const startWatching = useCallback(async () => {
-    subscription.current = await Location.watchPositionAsync(
-      { accuracy: Location.Accuracy.BestForNavigation, distanceInterval: DISTANCE_INTERVAL_M },
+    subscription.current = await watchLocation(
+      { distanceInterval: DISTANCE_INTERVAL_M },
       (loc) => {
-        if (loc.coords.accuracy != null && loc.coords.accuracy > MAX_ACCURACY_M) return;
+        if (loc.accuracy != null && loc.accuracy > MAX_ACCURACY_M) return;
         const point: TrackPoint = {
-          lat: loc.coords.latitude,
-          lng: loc.coords.longitude,
-          alt: loc.coords.altitude,
+          lat: loc.latitude,
+          lng: loc.longitude,
+          alt: loc.altitude,
           t: Math.round(loc.timestamp),
         };
         const prev = lastPoint.current;
@@ -95,7 +98,11 @@ export function useRecorder() {
     activityType.current = type;
     const { granted } = await Location.requestForegroundPermissionsAsync();
     if (!granted) {
-      setError('Location permission is needed to record. Turn it on in Settings > Privacy > Location Services.');
+      setError(
+        Platform.OS === 'web'
+          ? 'Location permission is needed to record. Allow location for this site in your browser settings.'
+          : 'Location permission is needed to record. Turn it on in Settings > Privacy > Location Services.',
+      );
       return;
     }
     // Steps are a bonus: if the phone can't count them or you say no, we record without them.

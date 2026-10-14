@@ -1,8 +1,10 @@
 import { DarkTheme, DefaultTheme, Stack, ThemeProvider, type ErrorBoundaryProps } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
-import { Animated, AppState, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
+import { Animated, AppState, Platform, Pressable, StyleSheet, Text, useColorScheme, View } from 'react-native';
 
+import '@/lib/web-setup';
+import { AlertHost } from '@/components/alert-host';
 import { BrandSplash } from '@/components/brand-splash';
 import { TextPromptHost } from '@/components/text-prompt';
 import { useColors } from '@/constants/theme';
@@ -36,6 +38,11 @@ export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
 // How long the STRIDE opening screen stays up at minimum, and how long it takes to fade away.
 // Short, like Strava's: just long enough to register the brand.
 const MIN_INTRO_MS = 900;
+
+// In the web app a screen's top-right button (Edit, Share...) would sit right against the edge;
+// this gives it the same breathing room it has on the phone. (The web header supports this
+// option even though the phone's header type doesn't list it.)
+const WEB_STACK_OPTIONS = Platform.OS === 'web' ? ({ headerRightContainerStyle: { paddingRight: 16 } } as object) : undefined;
 const FADE_MS = 250;
 
 // The root of the app. Logged-out users only see the login screen;
@@ -81,7 +88,7 @@ function RootNavigator() {
   return (
     <View style={styles.root}>
       {!loading && (
-        <Stack>
+        <Stack screenOptions={WEB_STACK_OPTIONS}>
           <Stack.Protected guard={!!user}>
             <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             <Stack.Screen name="activity/[id]" options={{ title: 'Activity', headerBackTitle: 'Back' }} />
@@ -113,8 +120,10 @@ function RootNavigator() {
           </Stack.Protected>
         </Stack>
       )}
-      {/* Text pop-ups on Android (iPhone uses the system Alert.prompt). */}
+      {/* Text pop-ups on Android and the web (iPhone uses the system Alert.prompt). */}
       <TextPromptHost />
+      {/* Alert pop-ups in the web app (phones use their own). */}
+      <AlertHost />
       {showIntro && (
         <Animated.View style={[StyleSheet.absoluteFill, { opacity: introOpacity }]} pointerEvents="none">
           <BrandSplash />
@@ -129,14 +138,30 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <AuthProvider>
-        <RootNavigator />
+        <PhoneWidth>
+          <RootNavigator />
+        </PhoneWidth>
       </AuthProvider>
     </ThemeProvider>
   );
 }
 
+// On a computer the web app shows as a phone-width column in the middle of the window, the way
+// the app is designed, instead of stretching across a wide screen. Phones are unaffected.
+function PhoneWidth({ children }: { children: React.ReactNode }) {
+  const colors = useColors();
+  if (Platform.OS !== 'web') return children;
+  return (
+    <View style={[styles.page, { backgroundColor: colors.raised }]}>
+      <View style={[styles.column, { backgroundColor: colors.background }]}>{children}</View>
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
   root: { flex: 1 },
+  page: { flex: 1, alignItems: 'center' },
+  column: { flex: 1, width: '100%', maxWidth: 520, overflow: 'hidden' },
   crash: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 32, gap: 14 },
   crashTitle: { fontSize: 20, fontWeight: '700' },
   crashButton: { borderRadius: 999, paddingVertical: 13, paddingHorizontal: 28, marginTop: 6 },
