@@ -6,7 +6,8 @@ import { useEffect } from "react";
 import { Hero } from "@/components/landing/hero";
 import s from "@/components/landing/landing.module.css";
 import { RunTracker } from "@/components/landing/run-tracker";
-import { CleanGps, Film, Finish, Footer, Privacy, Screens } from "@/components/landing/sections";
+import { CleanGps, Finish, Footer, Privacy, Screens } from "@/components/landing/sections";
+import { Soundtrack } from "@/components/landing/soundtrack";
 import { useAuth } from "@/lib/auth";
 
 // The landing page is one run: the hero draws a real route, and as you read down the page a
@@ -23,7 +24,7 @@ export default function Home() {
   return (
     <main className={s.page}>
       <Hero />
-      <Film />
+      <Soundtrack />
       <CleanGps />
       <Screens />
       <Privacy />
