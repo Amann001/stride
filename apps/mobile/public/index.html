@@ -11,13 +11,18 @@
 
     <!-- Installable app ("Add to Home Screen"): Android and computers read the manifest, iPhone reads the apple-* tags. -->
     <link rel="manifest" href="/app/manifest.webmanifest" />
-    <meta name="theme-color" content="#121212" />
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#121212" media="(prefers-color-scheme: dark)" />
     <meta name="color-scheme" content="dark light" />
     <link rel="apple-touch-icon" href="/app/icons/apple-touch-icon.png" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Stride" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <!-- "default" keeps the iPhone's status bar as its own strip in the app's colour (theme-color
+         above). With "black-translucent", iOS 26 starts the app under the status bar but makes it
+         that much too short, leaving an empty band under the tab bar (WebKit bug 301108).
+         iPhones read this only when the app is added to the Home Screen. -->
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
 
     <!-- The `react-native-web` recommended style reset: https://necolas.github.io/react-native-web/docs/setup/#root-element -->
     <style id="expo-reset">
