@@ -19,3 +19,8 @@ WhatsApp *
 # Vercel (website hosting) link for this folder, and its temporary key.
 .vercel
 /.env.local
+
+# Files that build tools make on their own (Gradle cache, notes that "next dev" writes for coding assistants).
+.gradle/
+apps/web/AGENTS.md
+apps/web/CLAUDE.md
