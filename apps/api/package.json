@@ -12,24 +12,24 @@
     "ops": "tsx --env-file-if-exists=.env src/ops.ts"
   },
   "dependencies": {
-    "@fastify/cors": "^11.0.0",
-    "@fastify/jwt": "^10.0.0",
-    "@fastify/rate-limit": "^11.2.0",
+    "@fastify/cors": "^11.3.1",
+    "@fastify/jwt": "^10.2.4",
+    "@fastify/rate-limit": "^11.2.1",
     "@repo/shared": "*",
-    "fastify": "^5.6.0",
-    "nodemailer": "^10.0.13",
-    "pg": "^8.16.0",
+    "fastify": "^5.12.7",
+    "nodemailer": "^10.1.2",
+    "pg": "^8.23.1",
     "tsx": "^4.20.0",
-    "zod": "^4.1.0"
+    "zod": "^4.6.7"
   },
   "devDependencies": {
-    "@electric-sql/pglite": "^0.5.8",
-    "@electric-sql/pglite-socket": "^0.2.11",
+    "@electric-sql/pglite": "^0.5.10",
+    "@electric-sql/pglite-socket": "^0.2.13",
     "@types/node": "^24.0.0",
     "@types/nodemailer": "^8.0.2",
     "@types/pg": "^8.15.0",
     "typescript": "^5.9.0",
-    "vitest": "^5.0.3"
+    "vitest": "^5.0.5"
   },
   "engines": {
     "node": ">=22"
